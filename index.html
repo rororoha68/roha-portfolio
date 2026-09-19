@@ -989,6 +989,13 @@ const HERO_HIT_SQUASH_AMOUNT = 0.32; // 원래 0.22 → 0.32로 키워 더 세�
 const HERO_HIT_DURATION_MS = 520;    // 원래 480 → 520으로 살짝 늘려 임팩트가 더 잘 읽히게
 // 쓰다듬는 동안 하트가 나오는 최소 간격(ms) — 포인터 이동 이벤트마다 나오면 너무 정신없어서 조절합니다.
 const HERO_PET_HEART_INTERVAL_MS = 350;
+// 톡 칠 때 터지는 별(갤러리와 동일): 5~8개가 55~150px까지 튀어 나갑니다.
+const HERO_STAR_COUNT_MIN = 5;
+const HERO_STAR_COUNT_MAX = 8;
+const HERO_STAR_DIST_MIN = 55;
+const HERO_STAR_DIST_MAX = 150;
+// hit 애니메이션 반영 강도(0~1). 1이면 애니메이션 그대로, 낮출수록 약하게 재생돼요.
+const HERO_HIT_ANIM_ALPHA = 0.6; // 머리 때리기 애니메이션이 세서 60%로 낮췄어요 (더 약하게: 0.4, 원래대로: 1)
 
 // ---------- 임시 진단 로그 ----------
 // 문제가 해결되면 HERO_DEBUG를 false로 바꾸거나 이 블록을 지워도 됩니다.
@@ -1514,14 +1521,14 @@ function spawnHeroHeart(player, boneName) {
   }
 }
 
-// 정수리를 톡 쳤을 때: 위쪽 150° 부채꼴로 별 5~8개가 터져 나갑니다(갤러리 spawnStarBurst와 동일).
+// 정수리를 톡 쳤을 때: 위쪽 150° 부채꼴로 별이 터져 나갑니다. 개수/거리는 위쪽 HERO_STAR_* 상수로 조절해요.
 function spawnHeroStarBurst(player, boneName) {
   const a = heroEffectAnchor(player, boneName);
   if (!a) return;
-  const count = 5 + Math.floor(Math.random() * 4);
+  const count = HERO_STAR_COUNT_MIN + Math.floor(Math.random() * (HERO_STAR_COUNT_MAX - HERO_STAR_COUNT_MIN + 1));
   for (let i = 0; i < count; i++) {
     const angle = (-90 + (Math.random() - 0.5) * 150) * Math.PI / 180;
-    const dist = 55 + Math.random() * 95;
+    const dist = HERO_STAR_DIST_MIN + Math.random() * (HERO_STAR_DIST_MAX - HERO_STAR_DIST_MIN);
     const el = document.createElement('span');
     el.className = 'hero-star';
     el.textContent = '★';
@@ -1582,9 +1589,10 @@ function playHeroHitReaction(player, boneName) {
       const hitEntry = player.setAnimation(HERO_CHARACTER.hitAnimation, false);
       // 이전 리액션이 재생 중이어도 믹스(크로스페이드) 없이 즉시 처음부터 재생되게 합니다.
       hitEntry.mixDuration = 0;
-      hitEntry.alpha = 1;
+      hitEntry.alpha = HERO_HIT_ANIM_ALPHA;
       if (HERO_CHARACTER.angryAnimation && heroAnimationNames.includes(HERO_CHARACTER.angryAnimation)) {
-        state.addAnimation(0, HERO_CHARACTER.angryAnimation, false, 0);
+        const angryEntry = state.addAnimation(0, HERO_CHARACTER.angryAnimation, false, 0);
+        if (angryEntry) angryEntry.alpha = HERO_HIT_ANIM_ALPHA; // hit_end도 같은 강도로 맞춰서 끝날 때 튀지 않게
       }
       state.addAnimation(0, heroIdleAnimation, true, 0);
     } catch (err) { /* noop */ }
