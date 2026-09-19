@@ -1031,7 +1031,7 @@ async function initHeroSpine() {
       // 정확한 원위치로 되돌릴 수 있습니다.
       HERO_CHARACTER.controlBones.forEach((boneName) => {
         const bone = player.skeleton.findBone(boneName);
-        if (bone) { const pose = heroBonePose(bone); heroOffsets.set(boneName, { x: 0, y: 0, vx: 0, vy: 0, baseX: pose.x, baseY: pose.y, dragging: false }); }
+        if (bone) { const pose = heroBonePose(bone); heroOffsets.set(boneName, { x: 0, y: 0, vx: 0, vy: 0, baseX: pose.x, baseY: pose.y, dragging: false, active: false }); }
       });
       // 볼(잡아당기기)과 정수리(히트포인트)를 서로 다른 점으로 구분해서 처리합니다.
       setupHeroHitPoint(player);
@@ -1280,6 +1280,7 @@ function setupHeroHitPoint(player) {
         o.y = bp.y - o.baseY;
         o.vx = 0; o.vy = 0;
         o.dragging = false;
+        o.active = true;
         heroLog('releaseAllDraggedBones: 스프링 등록함', { name, offX: o.x, offY: o.y });
       }
     });
@@ -1312,7 +1313,14 @@ function setupHeroHitPoint(player) {
       if (moved < HERO_TAP_MOVE_THRESHOLD) {
         // 거의 움직이지 않고 뗀 경우: 톡 클릭으로 처리합니다.
         const off = heroOffsets.get(boneName);
-        if (off) off.dragging = false; // 스프링 대상이 아니므로 그냥 손을 뗍니다.
+        if (off) {
+          off.dragging = false; // 스프링 대상이 아니므로 그냥 손을 뗍니다.
+          // 라이브러리가 누르는 순간 살짝 끌어당긴 위치를 스프링 없이 바로 원위치로 돌려서,
+          // hit 애니메이션의 atama 키프레임을 덮어쓰지 않게 합니다.
+          const tapBone = player.skeleton.findBone(boneName);
+          if (tapBone) { const tp = heroBonePose(tapBone); tp.x = off.baseX; tp.y = off.baseY; }
+          off.x = 0; off.y = 0; off.vx = 0; off.vy = 0; off.active = false;
+        }
         if (isHitBone) {
           heroLog('onPressEnd: 히트 리액션 재생', boneName);
           playHeroHitReaction(player, boneName);
@@ -1555,7 +1563,7 @@ function playHeroReleaseReaction(player, boneName, { isDragBone } = {}) {
     // 혹시 초기화 시점에 캡처되지 않은 뼈라면, 지금이라도(이미 밀려난 상태겠지만)
     // 기록해둡니다. 정상 흐름에서는 success 콜백에서 이미 캡처돼 있습니다.
     const pose0 = heroBonePose(bone);
-    off = { x: 0, y: 0, vx: 0, vy: 0, baseX: pose0.x, baseY: pose0.y, dragging: false };
+    off = { x: 0, y: 0, vx: 0, vy: 0, baseX: pose0.x, baseY: pose0.y, dragging: false, active: false };
     heroOffsets.set(boneName, off);
   }
   if (bone && off) {
@@ -1566,6 +1574,7 @@ function playHeroReleaseReaction(player, boneName, { isDragBone } = {}) {
     off.y = pose.y - off.baseY;
     off.vx = 0; off.vy = 0;
     off.dragging = false;
+    off.active = true; // 이제부터 스프링이 원위치로 되돌립니다
   }
 }
 
@@ -1576,10 +1585,9 @@ function playHeroHitReaction(player, boneName) {
   if (HERO_CHARACTER.hitAnimation && heroAnimationNames.includes(HERO_CHARACTER.hitAnimation)) {
     try {
       const state = player.animationState;
-      const hitEntry = player.setAnimation(HERO_CHARACTER.hitAnimation, false);
-      // 이전 리액션이 재생 중이어도 믹스(크로스페이드) 없이 즉시 처음부터 재생되게 합니다.
-      hitEntry.mixDuration = 0;
-      hitEntry.alpha = 1;
+      // index와 동일: hit → hit_end → idle 순서로, 믹스/알파는 기본값 그대로 씁니다.
+      // (연타하면 setAnimation이 현재 재생을 끊고 hit을 처음부터 다시 재생합니다.)
+      state.setAnimation(0, HERO_CHARACTER.hitAnimation, false);
       if (HERO_CHARACTER.angryAnimation && heroAnimationNames.includes(HERO_CHARACTER.angryAnimation)) {
         state.addAnimation(0, HERO_CHARACTER.angryAnimation, false, 0);
       }
@@ -1621,6 +1629,11 @@ function applyHeroProceduralEffects(player, dt) {
     const bone = skeleton.findBone(boneName);
     if (!bone) { heroOffsets.delete(boneName); return; }
     if (off.dragging) return; // 드래그 중엔 SpinePlayer 기본 기능이 위치를 담당합니다.
+    // ★ index(볼루록 갤러리)와 같은 방식: 스프링이 돌아가는 중일 때만 atama/cheek 위치를 씁니다.
+    //   예전엔 쉬는 동안에도 매 프레임 이 뼈들의 x/y를 셋업 위치로 고정(pin)해서,
+    //   hit / pet_idle / pull_idle 애니메이션이 atama·cheek에 넣어둔 키프레임(그리고 그걸
+    //   따라가는 head/face 트랜스폼 제약)이 전부 덮어써졌습니다.
+    if (!off.active) return;
 
     const ax = -HERO_SPRING_STIFFNESS * off.x - HERO_SPRING_DAMPING * off.vx;
     const ay = -HERO_SPRING_STIFFNESS * off.y - HERO_SPRING_DAMPING * off.vy;
@@ -1640,7 +1653,8 @@ function applyHeroProceduralEffects(player, dt) {
       //   계속 살려둡니다(컨트롤 뼈가 몇 개 안 되니 매 프레임 계산해도 비용은 미미합니다).
       off.x = 0; off.y = 0; off.vx = 0; off.vy = 0;
       const posePin = heroBonePose(bone);
-      posePin.x = off.baseX; posePin.y = off.baseY;
+      posePin.x = off.baseX; posePin.y = off.baseY; // 마지막 한 번만 정확히 원위치로 스냅
+      off.active = false;                            // 그 뒤로는 애니메이션이 자유롭게 씁니다
       return;
     }
     const poseSpring = heroBonePose(bone);
