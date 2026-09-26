@@ -1,0 +1,1812 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>로하 — Spine 2D Animator</title>
+
+<!-- ============================================================
+  이 파일은 통째로 열어서 바로 쓸 수 있는 단일 HTML 파일입니다.
+  본인 이름 / 소개 / 작업물 스파인 파일 경로만 바꾸면 됩니다.
+  바꿔야 할 위치는 "CUSTOMIZE" 주석으로 표시해뒀어요.
+============================================================ -->
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+<!-- Spine Web Player (esotericsoftware 공식 CDN) -->
+<script src="https://unpkg.com/@esotericsoftware/spine-player@4.3.*/dist/iife/spine-player.js"></script>
+<link rel="stylesheet" href="https://unpkg.com/@esotericsoftware/spine-player@4.3.*/dist/spine-player.css">
+
+<style>
+  :root{
+    --bg: #121517;
+    --panel: #191d20;
+    --panel-2: #20252a;
+    --line: #2a3136;
+    --bone: #d7ff4a;
+    --ik: #b98bff;
+    --mesh: #46d6e0;
+    --fan: #ff9b6a;
+    --ink: #eef1ea;
+    --ink-dim: #868f96;
+    --radius: 14px;
+    --display: 'Space Grotesk', sans-serif;
+    --body: 'Inter', sans-serif;
+    --mono: 'JetBrains Mono', monospace;
+  }
+
+  *{ box-sizing: border-box; }
+  html{ scroll-behavior: smooth; }
+  body{
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: var(--body);
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+    word-break: keep-all;
+    overflow-wrap: break-word;
+  }
+
+  ::selection{ background: var(--bone); color: #10130f; }
+  a{ color: inherit; }
+  :focus-visible{ outline: 2px solid var(--bone); outline-offset: 3px; border-radius: 4px; }
+
+  .wrap{ max-width: 1180px; margin: 0 auto; padding: 0 28px; }
+
+  .grid-bg{
+    background-image: radial-gradient(var(--line) 1px, transparent 1px);
+    background-size: 26px 26px;
+    background-position: -6px -6px;
+  }
+
+  /* ---------- NAV ---------- */
+  header{ position: sticky; top: 0; z-index: 50; background: rgba(18,21,23,0.85); backdrop-filter: blur(10px); border-bottom: 1px solid var(--line); }
+  .nav{ display: flex; align-items: center; justify-content: space-between; padding: 16px 28px; max-width: 1180px; margin: 0 auto; }
+  .brand{ font-family: var(--mono); font-size: 13px; color: var(--ink-dim); display: flex; align-items: center; gap: 8px; letter-spacing: 0.02em; }
+  .brand .dot{ width: 8px; height: 8px; border-radius: 50%; background: var(--bone); box-shadow: 0 0 8px var(--bone); }
+  .navlinks{ display: flex; gap: 28px; font-size: 14px; }
+  .navlinks a{ text-decoration: none; color: var(--ink-dim); transition: color .2s; }
+  .navlinks a:hover{ color: var(--bone); }
+  @media (max-width: 640px){ .navlinks{ display:none; } }
+
+  /* ---------- HERO ---------- */
+  .hero{
+    position: relative; min-height: 92vh;
+    display: grid; grid-template-columns: 1.1fr 0.9fr; align-items: center; gap: 20px;
+    max-width: 1180px; margin: 0 auto;
+    padding: 110px 28px 60px;
+  }
+  @media (max-width: 940px){ .hero{ grid-template-columns: 1fr; padding-top: 60px; text-align: center; } }
+
+  .hero-inner{ position: relative; z-index: 2; }
+  .eyebrow{ font-family: var(--mono); font-size: 13px; color: var(--mesh); letter-spacing: 0.12em; text-transform: uppercase; margin-bottom: 18px; display: flex; align-items: center; gap: 10px; }
+  .eyebrow::before{ content:''; width: 22px; height: 1px; background: var(--mesh); display:inline-block; }
+  h1.name{ font-family: var(--display); font-weight: 700; font-size: clamp(40px, 7vw, 84px); line-height: 0.98; margin: 0 0 22px; letter-spacing: -0.02em; text-wrap: balance; }
+  h1.name .accent{ color: var(--bone); }
+  .hero p.lede{ font-size: clamp(16px, 2vw, 19px); color: var(--ink-dim); max-width: 520px; margin: 0 0 34px; text-wrap: pretty; }
+  .hero-cta{ display: flex; gap: 14px; flex-wrap: wrap; margin-bottom: 30px; }
+  @media (max-width: 940px){ .hero-cta{ justify-content: center; } .eyebrow{ justify-content: center; } .hero p.lede{ margin-left: auto; margin-right: auto; } }
+  .btn{ font-family: var(--body); font-weight: 600; font-size: 14px; padding: 13px 24px; border-radius: 999px; text-decoration: none; display: inline-flex; align-items: center; gap: 8px; transition: transform .18s ease, background .18s ease, color .18s ease; border: none; cursor: pointer; }
+  .btn-primary{ background: var(--bone); color: #10130f; }
+  .btn-primary:hover{ transform: translateY(-2px); }
+  .btn-ghost{ border: 1px solid var(--line); color: var(--ink); background: transparent; }
+  .btn-ghost:hover{ border-color: var(--bone); color: var(--bone); transform: translateY(-2px); }
+
+  /* ---------- INTERACTIVE FACE ---------- */
+  .face-wrap{ position: relative; display: flex; flex-direction: column; align-items: center; gap: 14px; z-index: 2; user-select: none; -webkit-user-select: none; }
+  .hero-spine-stage{
+    width: min(380px, 80vw); height: min(380px, 80vw);
+    /* ★ 버그였던 지점: 여기 overflow:hidden + border-radius:50%가 캔버스를 "시각적으로"
+       원형으로 잘라줬지만, 크롬 계열 브라우저는 이 클리핑을 히트테스트(포인터 이벤트
+       판정)에도 그대로 적용합니다. 그래서 손가락/마우스가 원 밖(정사각형 캔버스의
+       모서리, 눈에는 안 보이는 부분)으로 나가는 순간 canvas가 더 이상 mousemove를
+       받지 못해 드래그가 그 자리에서 얼어붙었습니다(마우스를 놓아도 이미 좌표 갱신이
+       멈춘 뒤라 반응이 없었습니다). overflow:hidden을 빼고, 아래 .hero-spine-player에
+       CSS mask로 원형을 "그리기만" 하도록 바꿨습니다 — mask는 렌더링만 건드리고
+       포인터 히트 영역은 그대로 정사각형 전체로 남기 때문에, 원 밖으로 나가도 드래그가
+       끊기지 않습니다. */
+    position: relative; border-radius: 50%;
+    background: radial-gradient(circle at 34% 28%, var(--panel-2), var(--panel) 72%);
+    border: 2.5px solid var(--bone);
+    touch-action: none;
+  }
+  .hero-spine-player{
+    width: 100%; height: 100%;
+    -webkit-mask-image: radial-gradient(circle closest-side, #000 97%, transparent 100%);
+            mask-image: radial-gradient(circle closest-side, #000 97%, transparent 100%);
+    -webkit-mask-size: 100% 100%;
+            mask-size: 100% 100%;
+    -webkit-mask-repeat: no-repeat;
+            mask-repeat: no-repeat;
+  }
+  .face-hint{ font-family: var(--mono); font-size: 11.5px; color: var(--ink-dim); text-align: center; display: flex; flex-direction: column; align-items: center; gap: 8px; }
+  .face-hint .k{ color: var(--bone); }
+  .face-hint .k2{ color: var(--ik); }
+  .face-hint .k3{ color: #ff6f91; }
+
+  /* 쓰다듬기(pet) 하트 이펙트: 원 위에 얹히는 투명 레이어(포인터 이벤트는 통과시킵니다).
+     쓰다듬는 동안 정수리 점 근처에서 하트가 부드럽게 위로 떠올라요. */
+  .hero-effect-layer{ position: absolute; inset: 0; pointer-events: none; overflow: visible; z-index: 3; }
+  .hero-star{
+    position: absolute; top: 0; left: 0; font-size: 30px; color: #ffd166;
+    text-shadow: 0 0 8px rgba(255,209,102,0.85);
+    transform: translate(-50%,-50%); will-change: transform, opacity;
+    animation: heroStarBurst .6s ease-out forwards;
+  }
+  @keyframes heroStarBurst{
+    0%{ transform: translate(-50%,-50%) scale(0.3) rotate(0deg); opacity: 1; }
+    100%{ transform: translate(calc(-50% + var(--dx)), calc(-50% + var(--dy))) scale(1.1) rotate(var(--rot)); opacity: 0; }
+  }
+  .hero-heart{
+    position: absolute; top: 0; left: 0; font-size: 26px; color: #ff6f91;
+    text-shadow: 0 0 8px rgba(255,111,145,0.85);
+    transform: translate(-50%,-50%); will-change: transform, opacity;
+    animation: heroHeartFloat .9s ease-out forwards;
+  }
+  @keyframes heroHeartFloat{
+    0%{ transform: translate(-50%,-50%) translateY(0) scale(0.5); opacity: 0.9; }
+    20%{ transform: translate(calc(-50% + var(--dx)), -50%) translateY(-6px) scale(1); opacity: 1; }
+    100%{ transform: translate(calc(-50% + var(--dx)), -50%) translateY(var(--dy)) scale(0.85); opacity: 0; }
+  }
+
+  /* ---------- SECTION HEADINGS ---------- */
+  .section{ padding: 110px 0; border-top: 1px solid var(--line); }
+  .section-head{ margin-bottom: 52px; max-width: 620px; }
+  .section-eyebrow{ font-family: var(--mono); font-size: 12px; color: var(--ik); text-transform: uppercase; letter-spacing: 0.12em; margin-bottom: 10px; }
+  .section-title{ font-family: var(--display); font-weight: 600; font-size: clamp(28px, 4vw, 42px); margin: 0 0 12px; letter-spacing: -0.01em; text-wrap: balance; }
+  .section-sub{ color: var(--ink-dim); font-size: 15px; text-wrap: pretty; }
+
+  .reveal{ opacity: 0; transform: translateY(22px); transition: opacity .7s ease, transform .7s ease; }
+  .reveal.in{ opacity: 1; transform: translateY(0); }
+
+  /* ---------- CONSTRAINTS ---------- */
+  .constraints{ display: grid; grid-template-columns: repeat(3, 1fr); gap: 1px; background: var(--line); border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; }
+  @media (max-width: 860px){ .constraints{ grid-template-columns: repeat(2,1fr); } }
+  @media (max-width: 560px){ .constraints{ grid-template-columns: 1fr; } }
+  .c-item{ background: var(--panel); padding: 30px 26px; transition: background .2s ease; }
+  .c-item:hover{ background: var(--panel-2); }
+  .c-icon{ width: 34px; height: 34px; margin-bottom: 18px; }
+  .c-item h3{ font-family: var(--display); font-size: 17px; margin: 0 0 8px; font-weight: 600; }
+  .c-item p{ font-size: 13.5px; color: var(--ink-dim); margin: 0; text-wrap: pretty; }
+  .c-item .tag{ font-family: var(--mono); font-size: 11px; color: var(--bone); display: block; margin-top: 14px; }
+
+  /* ---------- PIPELINE ---------- */
+  .pipeline{ display: flex; overflow-x: auto; gap: 0; border: 1px solid var(--line); border-radius: var(--radius); background: var(--panel); }
+  .p-step{ flex: 1 0 180px; padding: 26px 22px; border-right: 1px dashed var(--line); position: relative; }
+  .p-step:last-child{ border-right: none; }
+  .p-frame{ font-family: var(--mono); font-size: 11px; color: var(--ink-dim); }
+  .p-diamond{ width: 10px; height: 10px; background: var(--bone); transform: rotate(45deg); margin: 14px 0 16px; }
+  .p-step h4{ font-family: var(--display); font-size: 15px; margin: 0 0 6px; }
+  .p-step p{ font-size: 12.5px; color: var(--ink-dim); margin: 0; text-wrap: pretty; }
+
+  /* ---------- WORKS ---------- */
+  .works-grid{ display: grid; grid-template-columns: repeat(2, 1fr); gap: 22px; }
+  @media (max-width: 780px){ .works-grid{ grid-template-columns: 1fr; } }
+  .work-card{ border: 1px solid var(--line); border-radius: var(--radius); background: var(--panel); overflow: hidden; transition: border-color .2s ease; }
+  .work-card:hover{ border-color: var(--bone); }
+  .work-stage{ aspect-ratio: 16 / 10.5; background: radial-gradient(var(--line) 1px, transparent 1px) 0 0/20px 20px, var(--bg); position: relative; display: flex; align-items: center; justify-content: center; }
+  .work-stage.is-live{ cursor: pointer; }
+  .work-stage .spine-player-embed{ width: 100%; height: 100%; pointer-events: none; }
+  .stage-hint{ position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; background: rgba(10,12,13,0.45); opacity: 0; transition: opacity .2s ease; font-family: var(--mono); font-size: 12.5px; color: var(--ink); gap: 6px; pointer-events: none; z-index: 5; }
+  .work-stage.is-live:hover .stage-hint{ opacity: 1; }
+  .idle-tag{ position: absolute; left: 10px; top: 10px; font-family: var(--mono); font-size: 10.5px; background: rgba(0,0,0,0.55); color: var(--bone); padding: 4px 9px; border-radius: 999px; pointer-events: none; z-index: 5; }
+  /* 호버 여부와 상관없이 항상 보이는 "사이트로 이동" 안내 배지 (터치 기기에서도 보이도록) */
+  .link-tag{ position: absolute; right: 10px; top: 10px; font-family: var(--mono); font-size: 10.5px; background: rgba(0,0,0,0.55); color: var(--fan); border: 1px solid var(--fan); padding: 4px 9px; border-radius: 999px; pointer-events: none; z-index: 5; display: flex; align-items: center; gap: 5px; }
+  .work-placeholder{ display: flex; flex-direction: column; align-items: center; gap: 14px; color: var(--ink-dim); text-align: center; padding: 20px; cursor: default; }
+  .work-placeholder svg{ width: 64px; height: 64px; opacity: 0.55; }
+  .work-placeholder .hint{ font-family: var(--mono); font-size: 10.5px; color: var(--ink-dim); line-height: 1.6; word-break: break-all; padding: 0 12px;}
+  .work-placeholder.work-external svg{ opacity: 1; color: var(--fan); }
+  .work-placeholder.work-external .hint{ font-family: var(--body); font-size: 13px; color: var(--ink); word-break: keep-all; }
+  .work-meta{ padding: 20px 22px; display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; }
+  .work-meta h3{ font-family: var(--display); font-size: 18px; margin: 0 0 6px; font-weight: 600; }
+  .work-meta .cat{ font-family: var(--mono); font-size: 11.5px; color: var(--mesh); }
+  .work-meta .credit{ font-family: var(--mono); font-size: 11px; color: var(--ink-dim); margin-top: 8px; display: block; }
+  .work-meta .credit a{ color: var(--ink-dim); text-decoration: none; border-bottom: 1px dotted var(--line); transition: color .2s, border-color .2s; }
+  .work-meta .credit a:hover{ color: var(--bone); border-color: var(--bone); }
+  .work-meta .credit.origin{ color: var(--fan); }
+  .work-meta .credit.origin a{ color: var(--fan); border-color: rgba(255,155,106,0.4); }
+  .work-meta .credit.origin a:hover{ color: var(--bone); border-color: var(--bone); }
+  .work-badge{ font-family: var(--mono); font-size: 10px; color: var(--bone); border: 1px solid var(--bone); border-radius: 999px; padding: 3px 9px; white-space: nowrap; }
+
+  /* ---------- WORK MODAL (큰 상호작용 뷰) ---------- */
+  .work-modal-overlay{ position: fixed; inset: 0; z-index: 200; background: rgba(8,10,11,0.8); backdrop-filter: blur(6px); display: flex; align-items: center; justify-content: center; padding: 24px; opacity: 0; pointer-events: none; transition: opacity .2s ease; }
+  .work-modal-overlay.open{ opacity: 1; pointer-events: auto; }
+  /* ★ 버그였던 지점(데모 카드 드래그 멈춤): 히어로 원형 캐릭터와 똑같은 원인입니다.
+     예전엔 .work-modal 하나에 border-radius + overflow:hidden을 같이 걸어서 안의
+     Spine 캔버스(.work-modal-stage)까지 통째로 클리핑했는데, 스테이지의 아래쪽
+     모서리가 모달의 둥근 모서리와 정확히 맞닿아 있어서, 그 모션 화면을 마우스로
+     드래그(패닝)하다가 커서가 둥근 모서리 부분(사각형 경계 안이지만 시각적으로는
+     잘린 영역)을 지나가면 캔버스가 mousemove를 못 받아 드래그가 그 자리에서
+     멈췄습니다. 이제는 overflow:hidden을 없애고, 모서리 둥글기를 캔버스를 직접
+     감싸지 않는 헤더/스테이지 각자에게 나눠 줬습니다 — border-radius는 overflow
+     없이도 그 요소 "자신의" 배경/테두리만 둥글게 그려주고 자식(캔버스)의 히트 영역은
+     건드리지 않기 때문에, 시각적으로는 그대로 둥글면서 모서리에서 드래그가 끊기지
+     않습니다. */
+  .work-modal{ width: min(94vw, 1100px); max-height: 90vh; background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); display: flex; flex-direction: column; transform: translateY(12px) scale(0.98); transition: transform .2s ease; }
+  .work-modal-overlay.open .work-modal{ transform: translateY(0) scale(1); }
+  .work-modal-head{ display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; padding: 20px 22px; border-bottom: 1px solid var(--line); border-radius: var(--radius) var(--radius) 0 0; background: var(--panel); }
+  .work-modal-title{ font-family: var(--display); font-size: 20px; font-weight: 600; margin: 0 0 4px; }
+  .work-modal-cat{ font-family: var(--mono); font-size: 12px; color: var(--mesh); }
+  .work-modal-close{ flex: none; width: 34px; height: 34px; border-radius: 50%; border: 1px solid var(--line); background: transparent; color: var(--ink); font-size: 16px; line-height: 1; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: border-color .2s, color .2s; }
+  .work-modal-close:hover{ border-color: var(--bone); color: var(--bone); }
+  .work-modal-stage{ flex: 1; min-height: min(60vh, 560px); background: radial-gradient(var(--line) 1px, transparent 1px) 0 0/24px 24px, var(--bg); position: relative; border-radius: 0 0 var(--radius) var(--radius); }
+  .work-modal-player{ width: 100%; height: 100%; }
+  .work-modal-ik-hint{ position: absolute; left: 16px; bottom: 16px; z-index: 6; font-family: var(--mono); font-size: 11.5px; color: var(--ik); background: rgba(10,12,13,0.6); border: 1px solid var(--ik); padding: 6px 12px; border-radius: 999px; pointer-events: none; display: none; }
+  .work-modal-nav{ position: absolute; top: 50%; transform: translateY(-50%); z-index: 7; width: 44px; height: 44px; border-radius: 50%; border: 1px solid var(--line); background: rgba(10,12,13,0.55); color: var(--ink); font-size: 20px; line-height: 1; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: border-color .18s, color .18s, background .18s, transform .18s; }
+  .work-modal-nav:hover{ border-color: var(--bone); color: var(--bone); background: rgba(10,12,13,0.8); }
+  .work-modal-nav:active{ transform: translateY(-50%) scale(0.92); }
+  .work-modal-nav.prev{ left: 14px; }
+  .work-modal-nav.next{ right: 14px; }
+  .work-modal-nav[hidden]{ display: none; }
+  .work-modal-anim-label{ position: absolute; left: 50%; bottom: 16px; transform: translateX(-50%); z-index: 6; font-family: var(--mono); font-size: 11.5px; color: var(--bone); background: rgba(10,12,13,0.6); border: 1px solid var(--line); padding: 6px 14px; border-radius: 999px; pointer-events: none; white-space: nowrap; }
+  @media (max-width: 640px){ .work-modal-nav{ width: 38px; height: 38px; font-size: 17px; } }
+  @media (max-width: 640px){ .work-modal{ width: 100vw; max-height: 100vh; height: 100vh; border-radius: 0; } .work-modal-head, .work-modal-stage{ border-radius: 0; } }
+
+  /* ---------- CONTACT / FOOTER ---------- */
+  footer{ border-top: 1px solid var(--line); padding: 70px 0 40px; }
+  .foot-top{ display: flex; justify-content: space-between; flex-wrap: wrap; gap: 40px; margin-bottom: 60px; }
+  .foot-title{ font-family: var(--display); font-size: clamp(30px, 5vw, 56px); font-weight: 700; margin: 0 0 20px; }
+  .foot-links{ display: flex; flex-direction: column; gap: 10px; font-family: var(--mono); font-size: 13px; }
+  .foot-links a{ text-decoration: none; color: var(--ink-dim); transition: color .2s; }
+  .foot-links a:hover{ color: var(--bone); }
+
+  /* ---------- LINK CARDS (외부 사이트 링크) ---------- */
+  .link-cards{ display: flex; flex-direction: column; gap: 12px; min-width: 260px; }
+  .link-card{
+    display: flex; align-items: center; gap: 14px;
+    padding: 14px 16px; border: 1px solid var(--line); border-radius: var(--radius);
+    background: var(--panel); text-decoration: none; color: var(--ink);
+    transition: transform .18s ease, border-color .18s ease, background .18s ease;
+  }
+  .link-card:hover{ transform: translateY(-3px); border-color: var(--card-accent, var(--bone)); background: var(--panel-2); }
+  .link-card-icon{
+    flex: none; width: 38px; height: 38px; border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    border: 1px solid var(--card-accent, var(--bone)); color: var(--card-accent, var(--bone));
+    transition: background .18s ease;
+  }
+  .link-card:hover .link-card-icon{ background: color-mix(in srgb, var(--card-accent, var(--bone)) 14%, transparent); }
+  .link-card-icon svg{ width: 18px; height: 18px; }
+  .link-card-text{ flex: 1; min-width: 0; }
+  .link-card-text h4{ margin: 0 0 2px; font-family: var(--display); font-size: 14.5px; font-weight: 600; }
+  .link-card-text p{ margin: 0; font-size: 12px; color: var(--ink-dim); text-wrap: pretty; }
+  .link-card-arrow{ flex: none; font-family: var(--mono); font-size: 15px; color: var(--ink-dim); transition: transform .18s ease, color .18s ease; }
+  .link-card:hover .link-card-arrow{ transform: translate(2px, -2px); color: var(--card-accent, var(--bone)); }
+  .foot-bottom{ display: flex; justify-content: space-between; flex-wrap: wrap; gap: 10px; font-family: var(--mono); font-size: 11px; color: var(--ink-dim); border-top: 1px solid var(--line); padding-top: 22px; }
+
+  @media (prefers-reduced-motion: reduce){
+    html{ scroll-behavior: auto; }
+    .reveal{ transition: none; opacity: 1; transform: none; }
+  }
+</style>
+</head>
+<body class="grid-bg">
+
+<header>
+  <nav class="nav">
+    <div class="brand"><span class="dot"></span>ROHA / SPINE ANIMATOR</div>
+    <div class="navlinks">
+      <a href="#toolkit">Toolkit</a>
+      <a href="#pipeline">Pipeline</a>
+      <a href="#works">Works</a>
+      <a href="#contact">Contact</a>
+    </div>
+  </nav>
+</header>
+
+<!-- ============================= HERO ============================= -->
+<section class="hero" id="hero">
+  <div class="hero-inner">
+    <div class="eyebrow">Spine 2D Animator</div>
+    <!-- CUSTOMIZE: 이름을 여기에 -->
+    <h1 class="name">로하<br><span class="accent">SPINE</span> ANIMATOR</h1>
+    <!-- CUSTOMIZE: 소개 문구 -->
+    <p class="lede">일러스트에 생명을 불어넣는 2D 애니메이터입니다.<br>리깅, 메시 디포메이션, IK 컨스트레인트부터 게임 엔진 익스포트까지 — 캐릭터가 진짜로 숨쉬게 만드는 일을 합니다.</p>
+    <div class="hero-cta">
+      <a class="btn btn-primary" href="#works">작업물 보기</a>
+      <a class="btn btn-ghost" href="#contact">연락하기</a>
+    </div>
+  </div>
+
+  <div class="face-wrap">
+    <div class="hero-spine-stage" id="hero-spine-stage">
+      <div class="hero-spine-player" id="hero-spine-player"></div>
+      <div class="hero-effect-layer" id="hero-effect-layer"></div>
+    </div>
+    <div class="face-hint">
+      <span><span class="k3">●</span> 정수리(빨간 점)를 톡 누르면 콩콩, 누른 채 문지르면 쓰다듬기 · <span class="k2">●</span> 볼(빨간 점)을 당기면 잡아당겨져요 — 놓으면 원래대로</span>
+    </div>
+  </div>
+</section>
+
+<!-- ============================= TOOLKIT ============================= -->
+<section class="section" id="toolkit">
+  <div class="wrap">
+    <div class="section-head reveal">
+      <div class="section-eyebrow">Constraints</div>
+      <h2 class="section-title">리그 컨스트레인트</h2>
+      <p class="section-sub">제가 다루는 스파인 워크플로우입니다.</p>
+    </div>
+
+    <div class="constraints reveal">
+      <div class="c-item">
+        <svg class="c-icon" viewBox="0 0 24 24" fill="none"><circle cx="6" cy="18" r="2.4" stroke="#d7ff4a" stroke-width="1.6"/><circle cx="12" cy="10" r="2.4" stroke="#d7ff4a" stroke-width="1.6"/><circle cx="18" cy="4" r="2.4" stroke="#d7ff4a" stroke-width="1.6"/><line x1="7.6" y1="16.7" x2="10.4" y2="11.3" stroke="#d7ff4a" stroke-width="1.6"/><line x1="13.6" y1="8.7" x2="16.4" y2="5.3" stroke="#d7ff4a" stroke-width="1.6"/></svg>
+        <h3>스켈레탈 리깅</h3>
+        <p>캐릭터의 골격 구조를 설계하고 계층을 잡습니다.<br>관절 배치와 부모-자식 구조가 이후 모든 애니메이션의 기반이 됩니다.</p>
+      </div>
+      <div class="c-item">
+        <svg class="c-icon" viewBox="0 0 24 24" fill="none" stroke="#46d6e0" stroke-width="1.4"><path d="M3 8l4-4 4 3 4-3 4 4-3 4 3 4-4 4-4-3-4 3-4-4 3-4z"/></svg>
+        <h3>메시 디포메이션</h3>
+        <p>이미지에 메시를 씌워 자연스러운 굴곡과 변형을 만듭니다.<br>옷 주름, 근육의 움직임까지 표현할 수 있습니다.</p>
+      </div>
+      <div class="c-item">
+        <svg class="c-icon" viewBox="0 0 24 24" fill="none" stroke="#b98bff" stroke-width="1.6"><path d="M4 20V10a4 4 0 0 1 4-4h8a4 4 0 0 1 4 4"/><circle cx="12" cy="4" r="2"/></svg>
+        <h3>IK 컨스트레인트</h3>
+        <p>손, 발 같은 말단 관절을 목표 지점으로 자연스럽게 따라가게 합니다.<br>걷기, 잡기 같은 동작을 훨씬 직관적으로 만들어줍니다.</p>
+      </div>
+      <div class="c-item">
+        <svg class="c-icon" viewBox="0 0 24 24" fill="none" stroke="#d7ff4a" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M3 15h18M9 3v18M15 3v18"/></svg>
+        <h3>웨이트 페인팅</h3>
+        <p>정점마다 뼈의 영향력을 세밀하게 조절해 관절 부위가 찢어지거나 뭉개지지 않도록 다듬습니다.</p>
+      </div>
+      <div class="c-item">
+        <svg class="c-icon" viewBox="0 0 24 24" fill="none" stroke="#46d6e0" stroke-width="1.5"><path d="M3 17l5-6 4 4 5-8 4 5"/></svg>
+        <h3>애니메이션 타이밍</h3>
+        <p>이징과 스페이싱, 홀드 타이밍을 조율해 동작에 무게감과 개성을 불어넣습니다.</p>
+      </div>
+      <div class="c-item">
+        <svg class="c-icon" viewBox="0 0 24 24" fill="none" stroke="#b98bff" stroke-width="1.5"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M8 4v16M3 9h5"/></svg>
+        <h3>게임 엔진 익스포트</h3>
+        <p>Unity, Unreal, Godot, Cocos 등 실제 프로젝트 파이프라인에 맞춰 스켈레톤을 최적화하고 내보냅니다.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================= PIPELINE ============================= -->
+<section class="section" id="pipeline">
+  <div class="wrap">
+    <div class="section-head reveal">
+      <div class="section-eyebrow">Workflow</div>
+      <h2 class="section-title">작업 파이프라인</h2>
+      <p class="section-sub">하나의 캐릭터가 완성되기까지 거치는 실제 단계입니다.</p>
+    </div>
+    <div class="pipeline reveal">
+      <div class="p-step"><span class="p-frame">f001</span><div class="p-diamond"></div><h4>컨셉 분석</h4><p>레퍼런스와 캐릭터 설정을 파악합니다.</p></div>
+      <div class="p-step"><span class="p-frame">f002</span><div class="p-diamond"></div><h4>리그 세팅</h4><p>본 구조와 계층을 설계합니다.</p></div>
+      <div class="p-step"><span class="p-frame">f003</span><div class="p-diamond"></div><h4>웨이트 페인팅</h4><p>메시와 뼈의 영향력을 다듬습니다.</p></div>
+      <div class="p-step"><span class="p-frame">f004</span><div class="p-diamond"></div><h4>애니메이션</h4><p>키프레임을 잡고 타이밍을 조율합니다.</p></div>
+      <div class="p-step"><span class="p-frame">f005</span><div class="p-diamond"></div><h4>익스포트/최적화</h4><p>엔진에 맞춰 최종 내보내기를 합니다.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================= WORKS ============================= -->
+<section class="section" id="works">
+  <div class="wrap">
+    <div class="section-head reveal">
+      <div class="section-eyebrow">Selected Work</div>
+      <h2 class="section-title">작업물</h2>
+      <p class="section-sub">데모 카드를 클릭하면 크게 열리는 화면에서 <b>화살표(‹›)로 모션을 직접 넘겨볼 수 있어요</b>.</p>
+    </div>
+    <div class="works-grid" id="works-grid"><!-- JS가 채웁니다 --></div>
+  </div>
+</section>
+
+<!-- ============================= CONTACT ============================= -->
+<footer id="contact">
+  <div class="wrap">
+    <div class="foot-top">
+      <div>
+        <div class="foot-title">CONTACT</div>
+        <!-- CUSTOMIZE: 이메일 -->
+        <a class="btn btn-primary" href="mailto:bpnga2000@gmail.com">bpnga2000@gmail.com</a>
+      </div>
+      <div class="link-cards">
+        <!-- CUSTOMIZE: 카드마다 href / --card-accent(포인트 컬러) / 제목 / 설명을 바꿔주세요 -->
+        <a class="link-card" style="--card-accent: var(--mesh)" href="https://x.com/rororoha_work" target="_blank" rel="noopener">
+          <span class="link-card-icon">
+            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M17.53 3H21l-7.5 8.57L22.2 21h-6.9l-5.4-6.62L3.75 21H.28l8.03-9.17L1.5 3h7.07l4.87 6.05L17.53 3zm-1.21 16.17h1.9L7.77 4.73h-2.04l10.6 14.44z"/></svg>
+          </span>
+          <span class="link-card-text">
+            <h4>Twitter / X</h4>
+            <p>작업 과정과 최신 소식을 공유해요</p>
+          </span>
+          <span class="link-card-arrow">↗</span>
+        </a>
+
+        <!-- CUSTOMIZE: 새 링크 카드를 추가하려면 위 <a> 블록을 통째로 복사해서 아래에 붙여넣고 값만 바꾸세요 -->
+        <a class="link-card" style="--card-accent: var(--ik)" href="https://example.com" target="_blank" rel="noopener">
+          <span class="link-card-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M10 14a3.5 3.5 0 0 0 5 0l3-3a3.5 3.5 0 0 0-5-5l-1.5 1.5"/><path d="M14 10a3.5 3.5 0 0 0-5 0l-3 3a3.5 3.5 0 0 0 5 5l1.5-1.5"/></svg>
+          </span>
+          <span class="link-card-text">
+            <h4>다른 사이트</h4>
+            <p>여기에 짧은 설명을 적어주세요</p>
+          </span>
+          <span class="link-card-arrow">↗</span>
+        </a>
+      </div>
+    </div>
+    <div class="foot-bottom">
+      <span>© 2026 ROHA</span>
+      <span>BUILT WITH SPINE RUNTIME 4.1</span>
+    </div>
+  </div>
+</footer>
+
+<!-- ============================= WORK MODAL (큰 화면 상호작용 뷰) ============================= -->
+<div class="work-modal-overlay" id="work-modal-overlay">
+  <div class="work-modal" role="dialog" aria-modal="true" aria-labelledby="work-modal-title">
+    <div class="work-modal-head">
+      <div>
+        <h3 class="work-modal-title" id="work-modal-title"></h3>
+        <div class="work-modal-cat" id="work-modal-cat"></div>
+      </div>
+      <button class="work-modal-close" id="work-modal-close" aria-label="닫기">✕</button>
+    </div>
+    <div class="work-modal-stage">
+      <div class="work-modal-player" id="work-modal-player"></div>
+      <div class="work-modal-ik-hint" id="work-modal-ik-hint"></div>
+      <button class="work-modal-nav prev" id="work-modal-prev" aria-label="이전 모션" hidden>‹</button>
+      <button class="work-modal-nav next" id="work-modal-next" aria-label="다음 모션" hidden>›</button>
+      <div class="work-modal-anim-label" id="work-modal-anim-label" hidden></div>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ============================================================
+   CUSTOMIZE: 작업물 배열
+   isDemo:true 인 항목은 예시(SpineBoy)를 보여주기 위한 데모입니다.
+   본인 작업물은 아래처럼 isDemo:false 로 두고
+   jsonUrl / atlasUrl 에 실제 파일 경로(또는 서버 URL)를 넣으면
+   자동으로 Spine Player 카드가 만들어집니다.
+   ※ .atlas 와 같은 폴더에 .png(텍스처)도 함께 있어야 합니다.
+   ※ spine-player 버전(4.1.*)은 Spine 에디터로 내보낸 버전과 맞춰주세요.
+
+   badgeType: 카드 오른쪽 위에 뜨는 배지입니다. 아래 중 하나를 넣으세요.
+     "demo"       DEMO        (연두)  — 예시/샘플용
+     "personal"   개인 작업물   (청록)  — 자기 오리지널 작업
+     "commission" 외주 작업물   (보라)  — 클라이언트 의뢰 작업
+     "fanart"     2차창작      (주황)  — 팬 프로젝트. 비상업 목적이며
+                                        원작 IP/원화 크레딧 표기를 권장합니다.
+   생략하면 isDemo:true → "demo", isDemo:false → "EMPTY" 로 자동 처리됩니다.
+
+   크레딧 필드 (둘 다 선택 사항이며, 원하는 것만 넣으면 됩니다):
+     illustrator: { name, url }  →  "일러스트 · 이름 ↗"  (원화/작화 작업자)
+     original:    { name, url }  →  "원작 · 이름 ↗"      (2차창작의 원작 IP/작품 표기용)
+   url은 생략 가능합니다. url 없이 name만 넣으면 링크 없는 텍스트로만 표시됩니다.
+   2차창작(fanart)은 원화 작가와 원작(IP) 둘 다 표기하고 싶을 때 두 필드를
+   함께 넣으면 두 줄로 각각 표시됩니다.
+============================================================ */
+const PROJECTS = [
+  {
+    title: "임시 샘플",
+    category: "2차창작 · 블루록 x 트릭컬 리바이브 스타일 모션",
+    isDemo: true,
+    badgeType: "fanart",
+    jsonUrl: "assets/cgr/CGR.json",
+    atlasUrl: "assets/cgr/CGR.atlas",
+    // CUSTOMIZE: 원화 작가 크레딧. 필요 없으면 illustrator 자체를 지워도 됩니다.
+    // CUSTOMIZE: isDemo를 true로 바꾸고 실제 파일을 연결한 뒤,
+    // 마우스로 드래그하게 할 뼈 이름을 여기에 넣어주세요. (없으면 빈 배열)
+    original: { name: "블루 록 (카네시로 무네유키, 노무라 유스케), 트릭컬 리바이브 (에피드 게임즈)" },
+    controlBones: []
+  },
+  {
+    title: "Idle 애니메이션",
+    category: "개인 작업물 · Idle 애니메이션",
+    isDemo: true,
+    badgeType: "personal",
+    jsonUrl: "assets/bbanana/bbanana.json",
+    atlasUrl: "assets/bbanana/bbanana.atlas",
+    // CUSTOMIZE: 원화 작가 크레딧. 필요 없으면 illustrator 자체를 지워도 됩니다.
+    illustrator: { name: "빠나나" },
+    // CUSTOMIZE: isDemo를 true로 바꾸고 실제 파일을 연결한 뒤,
+    // 마우스로 드래그하게 할 뼈 이름을 여기에 넣어주세요. (없으면 빈 배열)
+    controlBones: []
+  },
+  {
+    title: "움직이는 일러스트",
+    category: "2차창작 · 일러스트 애니메이팅",
+    isDemo: true,
+    badgeType: "fanart",
+    jsonUrl: "assets/MZD/MZD.json",
+    atlasUrl: "assets/MZD/MZD.atlas",
+    // CUSTOMIZE: 외주는 클라이언트 동의 없이 공개하면 안 되니, 계약서에
+    // 포트폴리오 게재 조항이 있는지 꼭 확인하세요.
+    illustrator: { name: "산갈치" },
+    controlBones: []
+  },
+  {
+    title: "볼루록 갤러리",
+    category: "2차창작 · 블루록 x 트릭컬 리바이브 스타일 인터랙션 데모 (여체화)",
+    // CUSTOMIZE: 썸네일에 실제 모션을 재생하고 싶으면 아래 jsonUrl/atlasUrl을
+    // 채우고 isDemo를 true로 바꾸세요. (isDemo가 true여도 linkUrl이 있으면
+    // 클릭 시 모달이 아니라 이 카드에 넣은 linkUrl로 이동합니다)
+    isDemo: true,
+    badgeType: "fanart",
+    jsonUrl: "assets/cgr/CGR.json",
+    atlasUrl: "assets/cgr/CGR.atlas",
+    // CUSTOMIZE: 클릭하면 이 주소로 새 탭에서 이동합니다 (썸네일 유무와 상관없이 항상 적용됨)
+    linkUrl: "https://rororoha68.github.io/bolluelock/",
+    // CUSTOMIZE: 썸네일용 Spine 파일이 아직 없을 때 보여줄 한 줄 설명 (isDemo:false일 때만 사용됨)
+    linkLabel: "실제 사이트에서 캐릭터를 직접 눌러보고 당겨보세요",
+    // CUSTOMIZE: 2차창작은 원화/원작 크레딧을 꼭 남겨주세요.
+    // CUSTOMIZE: 원작(원본 IP/작품) 표기. 예: 블루록 x 트릭컬 리바이브 2차창작이면
+    // 각 원작 타이틀과 공식 링크를 넣어주세요.
+    original: { name: "블루 록 (카네시로 무네유키, 노무라 유스케), 트릭컬 리바이브 (에피드 게임즈)" },
+    controlBones: []
+  },
+  {
+    title: "키메라 리깅",
+    category: "개인 작업물 · 크리쳐 리깅",
+    isDemo: true,
+    badgeType: "personal",
+    jsonUrl: "assets/eva/kimera.json",
+    atlasUrl: "assets/eva/kimera.atlas",
+    // CUSTOMIZE: 외주는 클라이언트 동의 없이 공개하면 안 되니, 계약서에
+    // 포트폴리오 게재 조항이 있는지 꼭 확인하세요.
+    illustrator: { name: "江波, https://x.com/KomSuserTod" },
+    controlBones: []
+  },
+  {
+    title: "empty",
+    category: "개인 작업물 · 일러스트 애니메이팅",
+    isDemo: false,
+    badgeType: "personal",
+    jsonUrl: "assets/MZD/MZD.json",
+    atlasUrl: "assets/MZD/MZD.atlas",
+    // CUSTOMIZE: 외주는 클라이언트 동의 없이 공개하면 안 되니, 계약서에
+    // 포트폴리오 게재 조항이 있는지 꼭 확인하세요.
+    illustrator: { name: "none" },
+    controlBones: []
+  }
+];
+
+const grid = document.getElementById('works-grid');
+const liveRefs = []; // isDemo(라이브 에셋이 있는) 카드만 채워짐: { stage }
+
+// 카드 오른쪽 위 배지: 타입별 라벨/색상
+const BADGE_TYPES = {
+  demo:       { label: 'DEMO',        color: 'var(--bone)' },
+  personal:   { label: '개인 작업물',  color: 'var(--mesh)' },
+  commission: { label: '외주 작업물',  color: 'var(--ik)' },
+  fanart:     { label: '2차창작',      color: 'var(--fan)' },
+  empty:      { label: 'EMPTY',        color: 'var(--ink-dim)' }
+};
+function getBadge(proj) {
+  const key = proj.badgeType || (proj.isDemo ? 'demo' : 'empty');
+  return BADGE_TYPES[key] || BADGE_TYPES.empty;
+}
+
+PROJECTS.forEach((proj, i) => {
+  const card = document.createElement('div');
+  card.className = 'work-card reveal';
+
+  const stage = document.createElement('div');
+  stage.className = 'work-stage';
+
+  if (proj.isDemo) {
+    // ★ 요청 반영: 데모 카드는 더 이상 모션을 자동으로 순환 재생하지 않습니다.
+    //   카드 안에서는 idle(또는 첫 번째) 모션 하나만 조용히 반복 재생되고, 카드를
+    //   클릭하면 아래 work-modal이 열려서 그 안의 ‹›버튼(또는 키보드 좌우 방향키)으로
+    //   이 프로젝트의 모든 모션을 직접 넘겨보며 재생할 수 있습니다. linkUrl이 있는
+    //   카드만 예외로, 그건 원래도 "다른 사이트로 이동"이라는 별개의 목적이라
+    //   그대로 클릭하면 새 탭으로 이동합니다.
+    stage.classList.add('is-live');
+
+    const playerDiv = document.createElement('div');
+    playerDiv.className = 'spine-player-embed';
+    playerDiv.id = 'player-' + i;
+    stage.appendChild(playerDiv);
+
+    // 지금 재생 중인 모션 이름을 보여주는 작은 태그
+    const idleTag = document.createElement('div');
+    idleTag.className = 'idle-tag';
+    idleTag.textContent = '▶ …';
+    stage.appendChild(idleTag);
+
+    if (proj.linkUrl) {
+      // linkUrl이 있는 카드는 호버 없이도(모바일 등 터치 기기 포함) 항상 보이는
+      // "사이트로 이동" 배지를 오른쪽 위에 띄웁니다.
+      const linkTag = document.createElement('div');
+      linkTag.className = 'link-tag';
+      linkTag.textContent = '🔗 사이트로 이동';
+      stage.appendChild(linkTag);
+
+      const hint = document.createElement('div');
+      hint.className = 'stage-hint';
+      hint.textContent = '🔗 클릭하면 사이트로 이동';
+      stage.appendChild(hint);
+
+      stage.addEventListener('click', () => window.open(proj.linkUrl, '_blank', 'noopener'));
+    } else {
+      // 클릭하면 큰 모달이 열리고, 그 안에서 화살표(‹›)로 모든 모션을 직접
+      // 넘겨보며 재생할 수 있습니다.
+      const hint = document.createElement('div');
+      hint.className = 'stage-hint';
+      hint.textContent = '🔍 클릭하면 크게 보기 · 화살표로 모션 전환';
+      stage.appendChild(hint);
+
+      stage.addEventListener('click', () => openWorkModal(i));
+    }
+    liveRefs[i] = { stage, idleTag };
+  } else if (proj.linkUrl) {
+    // 외부 사이트로 연결되는 카드인데 아직 썸네일용 Spine 파일(jsonUrl/atlasUrl)은
+    // 없는 경우: 간단한 아이콘 placeholder로 보여주고 클릭하면 바로 이동합니다.
+    // CUSTOMIZE: jsonUrl/atlasUrl을 채우고 isDemo를 true로 바꾸면 위 분기로 넘어가서
+    // 실제 스파인 모션이 썸네일로 재생되고, 클릭 시에는 여전히 이 링크로 이동합니다.
+    stage.classList.add('is-live');
+    stage.innerHTML = `
+      <div class="work-placeholder work-external">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4">
+          <path d="M10 14a3.5 3.5 0 0 0 5 0l3-3a3.5 3.5 0 0 0-5-5l-1.5 1.5"/>
+          <path d="M14 10a3.5 3.5 0 0 0-5 0l-3 3a3.5 3.5 0 0 0 5 5l1.5-1.5"/>
+        </svg>
+        <div class="hint">${proj.linkLabel || '클릭하면 실제 사이트로 이동합니다'}</div>
+      </div>`;
+
+    const linkTag = document.createElement('div');
+    linkTag.className = 'link-tag';
+    linkTag.textContent = '🔗 사이트로 이동';
+    stage.appendChild(linkTag);
+
+    const hint = document.createElement('div');
+    hint.className = 'stage-hint';
+    hint.textContent = '🔗 새 탭에서 사이트 열기';
+    stage.appendChild(hint);
+
+    stage.addEventListener('click', () => window.open(proj.linkUrl, '_blank', 'noopener'));
+  } else {
+    stage.innerHTML = `
+      <div class="work-placeholder">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2">
+          <circle cx="12" cy="5" r="2.2"/><path d="M12 7.2v6M12 13.2l-4 6M12 13.2l4 6M8 10l-3 2M16 10l3 2"/>
+        </svg>
+        <div class="hint">jsonUrl: "${proj.jsonUrl}"<br>atlasUrl: "${proj.atlasUrl}"</div>
+      </div>`;
+    // CUSTOMIZE: 실제 파일을 연결하고 isDemo를 true로 바꾸면
+    // 위 데모 카드와 동일하게 idle 썸네일 + 클릭 시 큰 상호작용 화면이 자동으로 적용됩니다.
+  }
+
+  const meta = document.createElement('div');
+  meta.className = 'work-meta';
+  const badge = getBadge(proj);
+  meta.innerHTML = `
+    <div>
+      <h3>${proj.title}</h3>
+      <div class="cat">${proj.category}</div>
+      ${proj.illustrator ? `<span class="credit">일러스트 · ${proj.illustrator.url ? `<a href="${proj.illustrator.url}" target="_blank" rel="noopener">${proj.illustrator.name} ↗</a>` : proj.illustrator.name}</span>` : ''}
+      ${proj.original ? `<span class="credit origin">원작 · ${proj.original.url ? `<a href="${proj.original.url}" target="_blank" rel="noopener">${proj.original.name} ↗</a>` : proj.original.name}</span>` : ''}
+    </div>
+    <span class="work-badge" style="color:${badge.color}; border-color:${badge.color};">${badge.label}</span>
+  `;
+
+  card.appendChild(stage);
+  card.appendChild(meta);
+  grid.appendChild(card);
+});
+
+// ---------- 자동재생 관련 헬퍼 ----------
+// 스켈레톤 JSON을 SpinePlayer 생성 "전에" 먼저 한 번 읽어서 애니메이션 이름을 알아냅니다.
+// success 콜백 안에서만 setAnimation을 부르면, showControls:true일 때
+// 컨트롤 패널(Animations 목록)이 만들어지는 과정에서 재생 상태가 다시 초기화되어
+// "드롭다운에서 직접 골라야만 재생되는" 문제가 생깁니다.
+// animation을 생성자 옵션에 처음부터 넣어주면 그 문제 없이 바로 재생됩니다.
+async function pickStartAnimation(jsonUrl, preferred = 'idle') {
+  try {
+    const res = await fetch(jsonUrl);
+    const data = await res.json();
+    const names = Object.keys((data && data.animations) || {});
+    if (!names.length) return null;
+    return names.includes(preferred) ? preferred : names[0];
+  } catch (err) {
+    // 실패해도 괜찮습니다. success 콜백에서 한 번 더 시도합니다.
+    console.warn('[Spine] 애니메이션 목록을 미리 읽지 못했습니다. success 콜백에서 재시도합니다.', err);
+    return null;
+  }
+}
+
+// success 콜백 안에서 한 번 더 재생을 "강제"합니다 (이중 안전장치).
+function forcePlay(player, name) {
+  try {
+    if (name) player.setAnimation(name, true);
+    if (typeof player.play === 'function') player.play();
+  } catch (err) { /* noop */ }
+  // 컨트롤 UI가 다음 프레임에 재생 상태를 되돌리는 경우까지 대비합니다.
+  requestAnimationFrame(() => {
+    try { if (typeof player.play === 'function') player.play(); } catch (err) { /* noop */ }
+  });
+}
+
+// ---------- 작은 카드: idle 썸네일 초기화 ----------
+window.addEventListener('load', () => {
+  // 진단용: spine-player.js 자체가 로드되지 않았다면 (CDN 차단, 오프라인 등)
+  // 화면에 바로 표시해서 콘솔을 안 열어도 원인을 알 수 있게 합니다.
+  if (!window.spine) {
+    console.error('[Spine] spine-player.js 가 로드되지 않았습니다. CDN(unpkg.com) 접근이 막혔거나, 이 파일을 file://로 직접 열었을 가능성이 있습니다. 로컬 서버(예: VS Code Live Server, `npx serve`)로 열어보세요.');
+    PROJECTS.forEach((proj, i) => {
+      if (proj.isDemo) liveRefs[i].idleTag.textContent = '⚠ 로딩 실패';
+    });
+    return;
+  }
+
+  PROJECTS.forEach(async (proj, i) => {
+    if (!proj.isDemo) return;
+    const startAnim = await pickStartAnimation(proj.jsonUrl);
+    new spine.SpinePlayer('player-' + i, {
+      skeleton: proj.jsonUrl,
+      atlas: proj.atlasUrl,
+      animation: startAnim || undefined, // 미리 알아낸 이름으로 바로 재생 시작
+      showControls: false,
+      interactive: false, // 썸네일 클릭으로 재생/정지 토글되지 않게
+      alpha: true,
+      backgroundColor: '#00000000',
+      premultipliedAlpha: true,
+      success: function (player) {
+        const anims = player.skeleton.data.animations.map(a => a.name);
+        const start = startAnim || (anims.includes('idle') ? 'idle' : anims[0]);
+        // ★ 요청 반영: 더 이상 이 프로젝트의 모든 모션을 순서대로 자동 재생하지
+        // 않습니다. idle(또는 첫 번째) 모션 하나만 조용히 반복 재생하고, 나머지
+        // 모션들은 카드를 클릭해 모달을 열면 그 안에서 화살표로 직접 넘겨볼 수
+        // 있습니다.
+        forcePlay(player, start);
+        if (liveRefs[i].idleTag) liveRefs[i].idleTag.textContent = '▶ ' + start;
+      },
+      error: function (player, msg) {
+        console.error('[Spine] "' + proj.title + '" 썸네일 로딩 실패:', msg);
+        liveRefs[i].idleTag.textContent = '⚠ 로딩 실패';
+      }
+    });
+  });
+});
+
+// ---------- 큰 모달: 클릭 시 확대 + 전체 모션 전환/상호작용 ----------
+const workModalOverlay = document.getElementById('work-modal-overlay');
+const workModalPlayerEl = document.getElementById('work-modal-player');
+const workModalTitle = document.getElementById('work-modal-title');
+const workModalCat = document.getElementById('work-modal-cat');
+const workModalClose = document.getElementById('work-modal-close');
+const workModalIkHint = document.getElementById('work-modal-ik-hint');
+const workModalPrevBtn = document.getElementById('work-modal-prev');
+const workModalNextBtn = document.getElementById('work-modal-next');
+const workModalAnimLabel = document.getElementById('work-modal-anim-label');
+let workModalPlayer = null;
+let workModalAnimNames = [];   // 현재 모달에서 전환 가능한 모션 이름들
+let workModalAnimIndex = -1;   // 현재 재생 중인 모션의 인덱스
+
+async function openWorkModal(i) {
+  const proj = PROJECTS[i];
+  if (!proj.isDemo || proj.linkUrl || !window.spine) return;
+
+  workModalTitle.textContent = proj.title;
+  workModalCat.textContent = proj.category;
+  workModalOverlay.classList.add('open');
+  document.body.style.overflow = 'hidden';
+
+  // ★ 요청 반영: 데모 카드(포트폴리오 그리드의 작업물 카드)에서는 볼 당기기 같은
+  //   드래그 상호작용 없이 모션만 재생되도록, 모달을 열 때 controlBones를 항상
+  //   빈 배열로 둡니다. (PROJECTS 배열에 controlBones를 적어놨더라도 여기서는
+  //   무시합니다 — 히어로 캐릭터의 드래그 상호작용은 상단 원 영역에만 남겨둡니다.)
+  const bones = [];
+  updateIkHint(bones);
+
+  const startAnim = await pickStartAnimation(proj.jsonUrl);
+
+  // showControls:true 로 두면 Spine 공식 플레이어 UI(모션 목록, 재생/일시정지, 속도, 줌 등)가
+  // 그대로 딸려와서 별도 상호작용 코드를 안 짜도 됩니다.
+  //
+  // controlBones: 여기 넘긴 뼈 이름마다 마우스로 잡아 당길 수 있는 빨간 IK 핸들이
+  // 자동으로 생깁니다 (Spine Player 공식 기능). 캐릭터의 볼/머리/손 등의 뼈 이름을
+  // PROJECTS 배열의 controlBones에 추가하면 바로 반영됩니다.
+  workModalPlayer = new spine.SpinePlayer(workModalPlayerEl, {
+    skeleton: proj.jsonUrl,
+    atlas: proj.atlasUrl,
+    animation: startAnim || undefined, // 미리 알아낸 이름으로 바로 재생 시작
+    showControls: true,
+    controlBones: bones,
+    alpha: true,
+    backgroundColor: '#00000000',
+    premultipliedAlpha: true,
+    success: function (player) {
+      const anims = player.skeleton.data.animations.map(a => a.name);
+      const start = startAnim || (anims.includes('idle') ? 'idle' : anims[0]);
+      forcePlay(player, start);
+      workModalAnimNames = anims;
+      workModalAnimIndex = Math.max(0, anims.indexOf(start));
+      updateAnimNav();
+      suppressStageClickPause(player);
+    },
+    error: function (player, msg) {
+      console.error('[Spine] 모달 로딩 실패:', msg);
+    }
+  });
+}
+
+// CUSTOMIZE(요청 반영): SpinePlayer는 showControls:true일 때, 컨트롤 뼈를
+// 드래그하는 게 아니라 스테이지를 그냥 톡 클릭/탭만 해도 자동으로 재생/일시정지를
+// 토글하는 기본 동작이 있습니다. 이 "클릭하면 멈추는" 동작만 없애고, 컨트롤 바의
+// 진짜 재생/일시정지 버튼과 IK 핸들 드래그는 그대로 두기 위해, 라이브러리가 방금
+// 클릭으로 일시정지시킨 걸 바로 되돌립니다(드래그였던 경우엔 손대지 않습니다).
+function suppressStageClickPause(player) {
+  const canvas = player && player.canvas;
+  if (!canvas) return;
+  let downPoint = null;
+  const onDown = (e) => { downPoint = getEventPoint(e); };
+  const onUp = (e) => {
+    if (!downPoint) return;
+    const p = getEventPoint(e);
+    const moved = Math.hypot(p.x - downPoint.x, p.y - downPoint.y);
+    downPoint = null;
+    // 드래그(뼈를 끌어당김)였다면 건드리지 않고, 제자리 클릭/탭이라 라이브러리가
+    // 방금 일시정지시킨 경우에만 되돌립니다.
+    if (moved < HERO_TAP_MOVE_THRESHOLD && player.paused) {
+      try { player.play(); } catch (err) { /* noop */ }
+    }
+  };
+  canvas.addEventListener('mousedown', onDown);
+  canvas.addEventListener('touchstart', onDown, { passive: true });
+  window.addEventListener('mouseup', onUp);
+  window.addEventListener('touchend', onUp, { passive: true });
+  window.addEventListener('touchcancel', () => { downPoint = null; }, { passive: true });
+}
+
+function closeWorkModal() {
+  workModalOverlay.classList.remove('open');
+  document.body.style.overflow = '';
+  if (workModalPlayer) {
+    if (typeof workModalPlayer.dispose === 'function') workModalPlayer.dispose();
+    workModalPlayer = null;
+  }
+  workModalPlayerEl.innerHTML = '';
+  updateIkHint([]);
+  workModalAnimNames = [];
+  workModalAnimIndex = -1;
+  updateAnimNav();
+}
+
+// controlBones가 있을 때만 "드래그해보세요" 힌트를 보여줍니다.
+function updateIkHint(bones) {
+  if (!workModalIkHint) return;
+  if (bones && bones.length) {
+    workModalIkHint.textContent = '🖱️ 빨간 점(' + bones.join(', ') + ')을 드래그해보세요 — IK 컨트롤';
+    workModalIkHint.style.display = '';
+  } else {
+    workModalIkHint.style.display = 'none';
+  }
+}
+
+// ---------- 모션 전환: ‹›버튼 / 키보드 좌우 ----------
+// (요청 반영: 스테이지를 그냥 클릭했을 때 자동으로 멈추던 동작은
+// suppressStageClickPause()에서 취소하도록 바꿨습니다. 컨트롤 바의 재생/일시정지
+// 버튼과 IK 핸들 드래그는 그대로 정상 동작합니다.)
+// 모션 전환은 버튼·키보드로만 처리합니다. (예전엔 옆으로 드래그하는
+// 스와이프로도 전환할 수 있게 했었는데, 볼 같은 컨트롤 뼈를 옆으로 당기는
+// 동작과 구분이 안 돼서 볼을 당겼다 놓을 때마다 모션이 바뀌는 문제가 있었어요.
+// 그래서 스와이프는 빼고 버튼/키보드만 남겼습니다.)
+function updateAnimNav() {
+  const has = workModalAnimNames.length > 1;
+  workModalPrevBtn.hidden = !has;
+  workModalNextBtn.hidden = !has;
+  if (workModalAnimNames.length && workModalAnimIndex >= 0) {
+    const name = workModalAnimNames[workModalAnimIndex];
+    workModalAnimLabel.textContent = name + ' · ' + (workModalAnimIndex + 1) + '/' + workModalAnimNames.length;
+    workModalAnimLabel.hidden = false;
+  } else {
+    workModalAnimLabel.hidden = true;
+  }
+}
+
+function goToAnimation(step) {
+  if (!workModalPlayer || workModalAnimNames.length < 2) return;
+  const n = workModalAnimNames.length;
+  workModalAnimIndex = (workModalAnimIndex + step + n) % n;
+  const name = workModalAnimNames[workModalAnimIndex];
+  try {
+    workModalPlayer.setAnimation(name, true);
+    if (typeof workModalPlayer.play === 'function') workModalPlayer.play(); // 전환 후 항상 재생 상태로
+  } catch (err) { /* noop */ }
+  updateAnimNav();
+}
+
+workModalPrevBtn.addEventListener('click', () => goToAnimation(-1));
+workModalNextBtn.addEventListener('click', () => goToAnimation(1));
+
+document.addEventListener('keydown', (e) => {
+  if (!workModalOverlay.classList.contains('open')) return;
+  if (e.key === 'ArrowLeft') goToAnimation(-1);
+  if (e.key === 'ArrowRight') goToAnimation(1);
+});
+
+workModalClose.addEventListener('click', closeWorkModal);
+workModalOverlay.addEventListener('click', (e) => {
+  if (e.target === workModalOverlay) closeWorkModal();
+});
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape' && workModalOverlay.classList.contains('open')) closeWorkModal();
+});
+
+/* ============================================================
+   CUSTOMIZE: 히어로 섹션의 인터랙티브 캐릭터 (진짜 스파인 파일)
+   1) jsonUrl / atlasUrl 을 실제 파일 경로로 바꾸세요.
+   2) idleAnimation 에 기본으로 반복 재생할 애니메이션 이름을 넣으세요.
+   3) dragBone 에 "잡아당기기" 전용 뼈 이름(볼 등)을 넣으세요.
+      → Spine Player 공식 기능으로, 드래그하면 빨간 IK 핸들로 잡아 당겨집니다.
+      → 놓으면 코드가 직접 스프링 물리를 계산해서 "띠용" 하고 튕겨 돌아옵니다.
+   4) hitBone 에 "히트포인트" 전용 뼈 이름(정수리 등)을 넣으세요.
+      → 살짝 움직이지 않고 톡 클릭/탭만 하면 "콩콩" 눌렸다 튕겨오르는
+        스쿼시 효과가 재생됩니다.
+      → 주의: dragBone/hitBone으로 지정한 뼈 자체에 그림(메시)이 가중치로
+        물려있지 않으면, 그 뼈를 움직이거나 스쿼시해도 화면에는 아무 변화가
+        보이지 않습니다(치기리 리그의 cheek/atama가 정확히 이 경우입니다 —
+        둘 다 순수 컨트롤 포인트라 실제 그림에는 연결돼 있지 않아요). 대신
+        pullAnimation/hitAnimation으로 지정한 "진짜 리액션 애니메이션"이
+        재생되는 걸로 반응을 보여주는 구조입니다.
+   5) hitAnimation / angryAnimation / releaseAnimation: 이름을 넣어두면(그리고
+      실제 그 이름의 애니메이션이 있으면) 자동 스쿼시/스프링 대신 그
+      애니메이션이 우선 재생됩니다. null(또는 존재하지 않는 이름)이면 위에서
+      설명한 자동 물리 효과가 그대로 적용됩니다.
+   6) pullAnimation은 "놓은 후 한 번"이 아니라, 볼을 "잡고 있는 동안" 반복
+      재생되는 전용 모션입니다. 잡으면 바로 시작되고 놓으면 원래 애니메이션
+      (보통 idle)으로 되돌아갑니다.
+============================================================ */
+const HERO_CHARACTER = {
+  jsonUrl: "assets/cgr/CGR.json",
+  atlasUrl: "assets/cgr/CGR.atlas",
+  idleAnimation: "idle",
+  // 치기리 리그(CGR.json)에 이제 hit / hit_end / pet_idle / pet_end / pull_idle /
+  // pull_end 전용 애니메이션이 모두 들어있어서, 아래 이름들이 그대로 재생됩니다.
+  // (이름을 못 찾으면 자동 스쿼시 같은 대체 효과로 넘어갑니다.)
+  hitAnimation: "hit",
+  angryAnimation: "hit_end",
+  releaseAnimation: "pull_end",
+  pullAnimation: "pull_idle", // 볼을 "잡고 있는 동안" 반복 재생할 전용 모션 (치기리 리그에 실제로 있음)
+  // 쓰다듬기: 정수리(hitBone)를 누른 채 10px 이상 움직이면 시작되고, 쓰다듬는 동안
+  // petAnimation이 반복 재생됩니다. 손을 떼면 petEndAnimation을 한 번 재생한 뒤 idle로 돌아가요.
+  petAnimation: "pet_idle",
+  petEndAnimation: "pet_end",
+  // 잡아당기기(끌기) 전용 뼈. 예: "cheek" (볼/뺨 뼈)
+  dragBone: "cheek",
+  // 히트포인트(톡 클릭) 전용 뼈. 예: "atama" (정수리 뼈)
+  hitBone: "atama",
+  // 원 안에 캐릭터를 얼마나 확대해서 보여줄지: 스켈레톤 좌표계 기준 뷰포트입니다.
+  // [x, y, width, height] — (x,y)는 뷰포트 왼쪽 아래 모서리, width/height는 보이는 범위.
+  // 지금 값은 "어깨 위(가슴 윗부분)부터 머리 위 여유 공간까지"를 기준으로 잡아둔 값이라,
+  // 리그마다 몸 크기가 다르니 너무 타이트하거나 헐렁하면 이 네 숫자만 조절하면 됩니다.
+  viewport: { x: -320, y: 430, width: 640, height: 700 }
+};
+// 위 두 값으로 실제 SpinePlayer에 넘길 controlBones 목록을 자동으로 만듭니다.
+// (dragBone과 hitBone이 다른 이름이면 자동으로 빨간 점이 2개가 됩니다)
+HERO_CHARACTER.controlBones = Array.from(new Set([HERO_CHARACTER.dragBone, HERO_CHARACTER.hitBone].filter(Boolean)));
+
+// 클릭(톡)과 드래그(잡아당기기)를 구분하는 기준 거리(px). 이보다 적게 움직이면 클릭으로 처리합니다.
+const HERO_TAP_MOVE_THRESHOLD = 10;
+
+// ---------- 스프링/스쿼시 물리 효과 상수 ----------
+// 볼(드래그) 스프링: 놓는 순간부터 이 강성(k)/감쇠(damping)로 0을 향해 튕겨 돌아옵니다.
+// (요청 반영: 되돌아올 때 "띠용" 하고 튕기는 텐션감이 너무 강했어서, 강성은 낮추고
+//  감쇠는 올려서 더 부드럽게/느슨하게 돌아오도록 낮췄습니다.)
+const HERO_SPRING_STIFFNESS = 620; // 원래 900 → 620으로 낮춰 당겨지는 힘 자체를 약하게
+const HERO_SPRING_DAMPING = 18;    // 원래 12 → 18로 올려 오버슈트(튕김)를 줄여 텐션감을 약하게
+// 정수리(히트) 콩콩 스쿼시: 눌리는 정도와 지속 시간
+// (요청 반영: 머리 맞는 반응이 약해 보여서 눌리는 폭과 지속시간을 살짝 키웠습니다.)
+const HERO_HIT_SQUASH_AMOUNT = 0.32; // 원래 0.22 → 0.32로 키워 더 세게 맞는 느낌
+const HERO_HIT_DURATION_MS = 520;    // 원래 480 → 520으로 살짝 늘려 임팩트가 더 잘 읽히게
+// 쓰다듬는 동안 하트가 나오는 최소 간격(ms) — 포인터 이동 이벤트마다 나오면 너무 정신없어서 조절합니다.
+const HERO_PET_HEART_INTERVAL_MS = 350;
+// 톡 칠 때 터지는 별(갤러리와 동일): 5~8개가 55~150px까지 튀어 나갑니다.
+const HERO_STAR_COUNT_MIN = 5;
+const HERO_STAR_COUNT_MAX = 8;
+const HERO_STAR_DIST_MIN = 55;
+const HERO_STAR_DIST_MAX = 150;
+
+// ---------- 임시 진단 로그 ----------
+// 문제가 해결되면 HERO_DEBUG를 false로 바꾸거나 이 블록을 지워도 됩니다.
+const HERO_DEBUG = true;
+function heroLog(...args) { if (HERO_DEBUG) console.log('[Hero]', ...args); }
+
+let heroSpinePlayer = null;
+let heroIdleAnimation = HERO_CHARACTER.idleAnimation;
+let heroAnimationNames = [];
+let heroPressState = null; // { x, y, boneName, petting } — 실제로 어떤 뼈를 누르기 시작했는지 상태 (petting: 쓰다듬기로 넘어갔는지)
+let heroPetHold = null;    // { backTo } — 쓰다듬는 동안 재생 중인 pet 모션의 정리 정보
+let heroLastPetHeartAt = 0; // 마지막으로 하트를 만든 시각(performance.now) — 하트 간격 조절용
+const heroOffsets = new Map();    // boneName -> {x,y,vx,vy,baseX,baseY,dragging} (스프링)
+const heroPatEffects = new Map(); // boneName -> {start,baseRotation,baseScaleX,baseScaleY,baseX,baseY} (스쿼시)
+
+async function initHeroSpine() {
+  if (!window.spine) {
+    console.error('[Spine] spine-player.js 가 로드되지 않아 히어로 캐릭터를 표시할 수 없습니다.');
+    return;
+  }
+  const startAnim = await pickStartAnimation(HERO_CHARACTER.jsonUrl, HERO_CHARACTER.idleAnimation);
+  const vp = HERO_CHARACTER.viewport;
+  heroSpinePlayer = new spine.SpinePlayer('hero-spine-player', {
+    skeleton: HERO_CHARACTER.jsonUrl,
+    atlas: HERO_CHARACTER.atlasUrl,
+    animation: startAnim || undefined, // 미리 알아낸 이름으로 바로 재생 시작
+    showControls: false,
+    controlBones: HERO_CHARACTER.controlBones || [],
+    // 원 안에서 어깨~머리 정도만 보이도록 확대하는 뷰포트. HERO_CHARACTER.viewport가
+    // 없으면 기본값(전체 애니메이션이 다 보이도록 자동 계산)으로 동작합니다.
+    viewport: vp ? { x: vp.x, y: vp.y, width: vp.width, height: vp.height, padLeft: '4%', padRight: '4%', padTop: '10%', padBottom: '2%' } : undefined,
+    alpha: true,
+    backgroundColor: '#00000000',
+    premultipliedAlpha: true,
+    success: function (player) {
+      const anims = player.skeleton.data.animations.map(a => a.name);
+      heroAnimationNames = anims;
+      const start = startAnim || (anims.includes(HERO_CHARACTER.idleAnimation) ? HERO_CHARACTER.idleAnimation : anims[0]);
+      heroIdleAnimation = start;
+      forcePlay(player, start);
+      // 컨트롤 뼈들의 "원래 자리"를 지금(셋업 포즈) 미리 스냅샷해둡니다. 드래그 도중이
+      // 아니라 로딩 시점에 한 번만 캡처해두면, 어떤 뼈를 누르든(볼이든 정수리든) 항상
+      // 정확한 원위치로 되돌릴 수 있습니다.
+      HERO_CHARACTER.controlBones.forEach((boneName) => {
+        const bone = player.skeleton.findBone(boneName);
+        if (bone) { const pose = heroBonePose(bone); heroOffsets.set(boneName, { x: 0, y: 0, vx: 0, vy: 0, baseX: pose.x, baseY: pose.y, dragging: false, active: false }); }
+      });
+      // 볼(잡아당기기)과 정수리(히트포인트)를 서로 다른 점으로 구분해서 처리합니다.
+      setupHeroHitPoint(player);
+      // 스프링/스쿼시 물리를 매 프레임 계산합니다.
+      startHeroPhysicsLoop(player);
+    },
+    error: function (player, msg) {
+      console.error('[Spine] 히어로 캐릭터 로딩 실패:', msg);
+    }
+  });
+}
+initHeroSpine();
+
+// ★ 버그 원인이었던 지점: 예전엔 player.selectedBones라는 SpinePlayer 내부 비공개
+//   필드를 읽어서 "어떤 컨트롤 뼈를 눌렀는지" 판정했습니다. 이 필드는 공식
+//   문서에 없는 구현 세부사항이라 spine-player 버전이 올라가면(이 파일은
+//   "4.3.*"처럼 마이너 버전을 고정하지 않고 씀) 이름이나 갱신 시점이 바뀔 수
+//   있고, 그러면 boneName을 영영 못 찾아 dragging 플래그가 안 켜지면서
+//   "볼을 놓아도 안 튕겨 돌아옴"·"정수리를 눌러도 반응 없음" 두 증상이 동시에
+//   생깁니다. 그래서 이제는 SpinePlayer 공식 예제에서도 쓰는 공개 API인
+//   sceneRenderer.camera.worldToScreen()으로 클릭 좌표와 각 컨트롤 뼈의 화면
+//   좌표 사이 거리를 직접 계산해서 판정합니다.
+const HERO_HIT_TEST_RADIUS = 28; // px — 라이브러리가 그리는 컨트롤 포인트 원(반지름 20px)보다 살짝 넉넉하게
+
+// ★ 근본 원인: 이 Spine 런타임(4.3)에서는 뼈의 "로컬 pose" (x, y, rotation,
+//   scaleX, scaleY, shearX, shearY — 애니메이션이 매 프레임 갱신하는 값)가 더 이상
+//   bone 객체에 직접 있지 않고 bone.pose 에 있습니다. 그리고 "월드 좌표/행렬"
+//   (worldX, worldY, a, b, c, d — 제약조건까지 다 반영되어 실제 렌더링에 쓰이는 값)은
+//   bone에도 없고 bone.appliedPose 에 있습니다. 지금까지 코드 전체가 bone.x /
+//   bone.y / bone.worldX / bone.worldY를 직접 읽고 썼는데, 이 런타임에서는 전부
+//   undefined라서:
+//     - heroOffsets의 baseX/baseY가 처음부터 undefined로 저장됨
+//     - releaseAllDraggedBones의 boneX/boneY도 undefined → NaN 연산
+//     - closestControlBoneName의 worldToScreen 입력도 NaN → 거리 비교(dist < bestDist)가
+//       NaN과의 비교라서 항상 false → bestName이 영원히 null
+//     - 스쿼시/스프링 물리 루프가 bone.x/y에 값을 써도 실제 로컬 pose(bone.pose.x/y)가
+//       아니라 존재하지도 않는 프로퍼티에 값이 얹혀서 화면에 반영이 안 됨
+//   즉 "볼 스냅백 안 됨"과 "머리 반응 없음" 두 증상 모두 이 한 가지 원인에서 나온
+//   것입니다. 아래 두 헬퍼로 구버전(값이 bone에 직접 있는 런타임)과 신버전(4.3,
+//   pose/appliedPose로 분리된 런타임) 모두를 지원합니다.
+function heroBonePose(bone) {
+  return (bone && bone.pose) ? bone.pose : bone;
+}
+function heroBoneWorld(bone) {
+  if (!bone) return null;
+  const src = (bone.appliedPose && Number.isFinite(bone.appliedPose.worldX)) ? bone.appliedPose : bone;
+  if (!Number.isFinite(src.worldX) || !Number.isFinite(src.worldY)) return null;
+  return { x: src.worldX, y: src.worldY };
+}
+// a/b/c/d(월드 2x2 회전+스케일 행렬)도 worldX/worldY와 마찬가지로 이 런타임에서는
+// bone이 아니라 bone.appliedPose에 있습니다. 머리 스쿼시가 부모의 회전을 반영해
+// "화면 기준"으로 납작해지려면 이 값이 반드시 필요합니다.
+function heroBoneWorldMatrix(bone) {
+  if (!bone) return null;
+  const src = (bone.appliedPose && Number.isFinite(bone.appliedPose.a)) ? bone.appliedPose : bone;
+  if (!Number.isFinite(src.a) || !Number.isFinite(src.b) || !Number.isFinite(src.c) || !Number.isFinite(src.d)) return null;
+  return { a: src.a, b: src.b, c: src.c, d: src.d };
+}
+
+function heroClosestControlBoneName(player, clientX, clientY) {
+  try {
+    const canvas = player && player.canvas;
+    const skeleton = player && player.skeleton;
+    const renderer = player && player.sceneRenderer;
+    const bones = HERO_CHARACTER.controlBones || [];
+    if (!canvas || !skeleton || !renderer || !renderer.camera
+      || typeof renderer.camera.worldToScreen !== 'function' || !bones.length) {
+      heroLog('closestControlBoneName: 필요한 객체가 없어서 판정 불가', {
+        hasCanvas: !!canvas, hasSkeleton: !!skeleton, hasRenderer: !!renderer,
+        hasCamera: !!(renderer && renderer.camera),
+        hasWorldToScreen: !!(renderer && renderer.camera && typeof renderer.camera.worldToScreen === 'function'),
+        bonesCount: bones.length
+      });
+      return null;
+    }
+
+    const rect = canvas.getBoundingClientRect();
+    // SpinePlayer 내부 구현과 동일하게, worldToScreen()이 돌려주는 좌표는 위/아래가
+    // 뒤집혀 있어서(위로 갈수록 커짐) DOM 좌표(아래로 갈수록 커짐)와 비교하기 전에
+    // clientHeight에서 빼서 뒤집어줘야 합니다.
+    const px = clientX - rect.left;
+    const py = canvas.clientHeight - (clientY - rect.top);
+
+    let bestName = null, bestDist = HERO_HIT_TEST_RADIUS;
+    const results = [];
+    // ★ 버그였던 지점: worldToScreen()은 내부적으로 좌표 객체에 spine.Vector3의
+    //   project() 메서드를 호출합니다. 그냥 { x, y, z } 평범한 객체를 넘기면
+    //   그 메서드가 없어서 "world.Coords.project is not a function" 예외가 나고,
+    //   forEach 도중 예외가 터지면 나머지 본은 계산도 못 한 채 판정 전체가
+    //   실패합니다(볼 스냅백 안 됨, 정수리 히트 안 됨의 근본 원인).
+    //   반드시 spine.Vector3 인스턴스를 만들어서 넘겨야 합니다.
+    const p = new spine.Vector3(0, 0, 0);
+    bones.forEach((name) => {
+      const bone = skeleton.findBone(name);
+      if (!bone) { results.push({ name, found: false }); return; }
+      try {
+        const world = heroBoneWorld(bone);
+        if (!world) { results.push({ name, error: 'no world position (bone.appliedPose missing)' }); return; }
+        p.x = skeleton.x + world.x; p.y = skeleton.y + world.y; p.z = 0;
+        renderer.camera.worldToScreen(p, canvas.clientWidth, canvas.clientHeight);
+        const dist = Math.hypot(p.x - px, p.y - py);
+        results.push({ name, screenX: Math.round(p.x), screenY: Math.round(p.y), dist: Math.round(dist) });
+        if (dist < bestDist) { bestDist = dist; bestName = name; }
+      } catch (perBoneErr) {
+        // 본 하나가 실패해도 나머지 본 판정은 계속 진행되도록 개별 try/catch로 격리
+        results.push({ name, error: String(perBoneErr) });
+      }
+    });
+    heroLog('closestControlBoneName 계산', { click: { px: Math.round(px), py: Math.round(py) }, results, bestName });
+    return bestName;
+  } catch (err) {
+    heroLog('closestControlBoneName 예외 발생 → null 반환', err);
+    return null;
+  }
+}
+
+// 예전 방식(라이브러리 내부 비공개 필드)도 대비용으로 남겨둡니다 — 위 방식이 어떤
+// 이유로든 실패하면(예: 카메라 API 자체가 없는 아주 오래된 빌드) 이 값을 대신 씁니다.
+function heroLegacySelectedBoneName(player) {
+  try {
+    const bones = HERO_CHARACTER.controlBones;
+    const selected = player && player.selectedBones;
+    heroLog('legacySelectedBoneName: player.selectedBones =', selected);
+    if (!selected || !bones || !bones.length) return null;
+    for (let i = 0; i < bones.length; i++) {
+      if (selected[i]) return bones[i];
+    }
+  } catch (err) { /* noop */ }
+  return null;
+}
+
+function getHeroPressedBoneName(player, clientX, clientY) {
+  const result = heroClosestControlBoneName(player, clientX, clientY) || heroLegacySelectedBoneName(player);
+  heroLog('getHeroPressedBoneName 최종 결과:', result);
+  return result;
+}
+
+function getEventPoint(e) {
+  if (e.changedTouches && e.changedTouches.length) {
+    const t = e.changedTouches[0];
+    return { x: t.clientX, y: t.clientY };
+  }
+  return { x: e.clientX, y: e.clientY };
+}
+
+// ★ 요청 반영: .hero-spine-player의 포인터 히트 영역은 (드래그가 중간에 끊기지
+//   않도록) 여전히 원이 아니라 사각형 전체입니다. 그런데 그 사각형은 눈에 보이는
+//   원보다 네 모서리만큼 더 넓어서, 마우스가 "눈에 보이는 원" 밖으로 나가도 여전히
+//   사각형 안에 있으면 브라우저 입장에선 계속 캔버스 위에 있는 것으로 취급됩니다.
+//   그래서 원 밖으로 나가도 mouseup 전까진 계속 "누르고 있는" 것으로 인식되던
+//   문제가 있었습니다. 이 함수는 실제로 보이는 원(#hero-spine-stage) 안에
+//   좌표가 있는지를 계산해서, 원 밖으로 나가는 순간을 감지할 수 있게 해줍니다.
+function heroPointInCircle(clientX, clientY) {
+  const stageEl = document.getElementById('hero-spine-stage');
+  if (!stageEl) return true;
+  const rect = stageEl.getBoundingClientRect();
+  const cx = rect.left + rect.width / 2;
+  const cy = rect.top + rect.height / 2;
+  const r = Math.min(rect.width, rect.height) / 2;
+  return Math.hypot(clientX - cx, clientY - cy) <= r;
+}
+
+// 볼(잡아당기기 전용 점)과 정수리(히트포인트 전용 점)를 각각 처리합니다:
+// - 정수리: 거의 움직이지 않고 눌렀다 떼면 톡 클릭 → 콩콩 스쿼시
+// - 볼: 눌렀다가 일정 거리 이상 끌고 떼면 잡아당기기 → 스프링 되돌림
+// - 안전장치: 역할 판정과 무관하게, 놓는 순간 실제로 눌렸던 뼈가 제자리에서
+//   벗어나 있으면 항상 스프링 되돌림 대상으로 등록합니다. 그래서 어느 점이든
+//   "당겨진 채로 안 돌아오는" 일이 생기지 않습니다.
+function setupHeroHitPoint(player) {
+  const canvas = player.canvas;
+  if (!canvas || !HERO_CHARACTER.controlBones || !HERO_CHARACTER.controlBones.length) return;
+
+  // ★ 버그였던 지점(재발): onPressMove가 원 밖으로 나간 걸 감지해서 onPressEnd를
+  //   불러도, 그건 "우리 쪽" 상태(heroOffsets의 dragging 플래그, 스프링 등록)만
+  //   정리할 뿐입니다. SpinePlayer 라이브러리 자신도 내부적으로 "지금 이 컨트롤
+  //   뼈를 마우스가 누르고 있다"는 상태를 따로 갖고 있는데, 그건 실제 mouseup/
+  //   touchend 이벤트가 라이브러리의 리스너에 도달해야만 풀립니다. 우리가
+  //   window에 걸어둔 mousemove 리스너는 "이 좌표가 원 밖이다"라고 판단만 할 뿐
+  //   실제 mouseup 이벤트를 만들어내지 않으므로, 마우스 버튼을 계속 누른 채로
+  //   원 밖에 나갔다가 다시 원 안으로 들어오면 라이브러리는 여전히 "드래그 중"
+  //   상태라 커서를 계속 따라가며 컨트롤 뼈를 움직였습니다(우리 스프링 물리와
+  //   뒤섞여 매 프레임 덮어써짐 → "점이 계속 따라오는" 현상). 그래서 원 밖으로
+  //   나가는 순간, 실제로 손을 뗀 것처럼 mouseup/touchend를 합성해서 canvas·
+  //   document·window에 직접 쏴줘서 라이브러리 자신의 드래그도 확실히 끝나도록
+  //   만듭니다.
+  const forceReleaseLibraryDrag = (e) => {
+    try {
+      if (e.changedTouches && e.changedTouches.length) {
+        const t = e.changedTouches[0];
+        let touch = t;
+        try {
+          touch = new Touch({
+            identifier: t.identifier, target: canvas,
+            clientX: t.clientX, clientY: t.clientY,
+            screenX: t.screenX, screenY: t.screenY,
+            pageX: t.pageX, pageY: t.pageY
+          });
+        } catch (touchCtorErr) { /* 일부 브라우저는 Touch 생성자가 없어서 원본 touch를 그대로 씀 */ }
+        const touchInit = { bubbles: true, cancelable: true, touches: [], targetTouches: [], changedTouches: [touch] };
+        canvas.dispatchEvent(new TouchEvent('touchend', touchInit));
+        window.dispatchEvent(new TouchEvent('touchend', touchInit));
+      } else {
+        const mouseInit = { bubbles: true, cancelable: true, clientX: e.clientX, clientY: e.clientY, button: 0, buttons: 0 };
+        canvas.dispatchEvent(new MouseEvent('mouseup', mouseInit));
+        document.dispatchEvent(new MouseEvent('mouseup', mouseInit));
+        window.dispatchEvent(new MouseEvent('mouseup', mouseInit));
+      }
+    } catch (err) {
+      heroLog('forceReleaseLibraryDrag: 합성 이벤트 실패', err);
+    }
+  };
+
+  const onPressStart = (e) => {
+    const p = getEventPoint(e);
+    const boneName = getHeroPressedBoneName(player, p.x, p.y);
+    heroPressState = { x: p.x, y: p.y, boneName, petting: false };
+    heroLog('onPressStart', { boneName, point: p });
+    if (!boneName) return;
+
+    // 지금 잡은 뼈를 "드래그 중" 상태로 표시해서, 물리 루프가 이 뼈의 위치를
+    // 건드리지 않고 SpinePlayer 기본 드래그 기능에 맡기도록 합니다.
+    const off = heroOffsets.get(boneName);
+    if (off) off.dragging = true;
+    heroLog('onPressStart: dragging 설정', { boneName, hasOffsetEntry: !!off });
+
+    // 볼(dragBone)을 잡는 순간, 잡고 있는 동안 반복 재생되는 전용 pull 모션을 시작합니다.
+    if (boneName === HERO_CHARACTER.dragBone) startHeroPullHold(player);
+  };
+
+  // ★ 진짜 안전장치: getHeroPressedBoneName()이 어떤 이유로든(SpinePlayer 내부
+  //   selectedBones 상태가 타이밍상 아직 안 갱신됐거나, 라이브러리 버전 차이 등)
+  //   boneName을 못 알아내는 경우에도, "지금 원위치에서 벗어나 있는 컨트롤 뼈"를
+  //   전부 훑어서 무조건 스프링 되돌림 대상으로 등록합니다. 이게 없으면 boneName
+  //   판별에 실패한 순간 그 뼈는 영영 스프링 계산에서 제외되어 "당긴 채로 안
+  //   돌아오는" 상태로 남아버립니다.
+  const releaseAllDraggedBones = () => {
+    (HERO_CHARACTER.controlBones || []).forEach((name) => {
+      const b = player.skeleton.findBone(name);
+      const o = heroOffsets.get(name);
+      if (!b || !o) { heroLog('releaseAllDraggedBones: 뼈/오프셋 항목 없음', { name, hasBone: !!b, hasOffset: !!o }); return; }
+      const bp = heroBonePose(b);
+      const strayed = Math.abs(bp.x - o.baseX) > 0.01 || Math.abs(bp.y - o.baseY) > 0.01;
+      heroLog('releaseAllDraggedBones 점검', { name, boneX: bp.x, boneY: bp.y, baseX: o.baseX, baseY: o.baseY, strayed, wasDragging: o.dragging });
+      if (o.dragging || strayed) {
+        o.x = bp.x - o.baseX;
+        o.y = bp.y - o.baseY;
+        o.vx = 0; o.vy = 0;
+        o.dragging = false;
+        o.active = true;
+        heroLog('releaseAllDraggedBones: 스프링 등록함', { name, offX: o.x, offY: o.y });
+      }
+    });
+  };
+
+  const onPressEnd = (e) => {
+    const pressState = heroPressState;
+    heroPressState = null;
+
+    if (pressState && pressState.boneName) {
+      const { x, y, boneName } = pressState;
+      const p = getEventPoint(e);
+      const moved = Math.hypot(p.x - x, p.y - y);
+      const isDragBone = boneName === HERO_CHARACTER.dragBone;
+      const isHitBone = boneName === HERO_CHARACTER.hitBone;
+      heroLog('onPressEnd', { boneName, moved, isDragBone, isHitBone });
+
+      if (isDragBone) stopHeroPullHold(player); // 잡고 있던 pull 모션은 무조건 정리합니다.
+
+      // 쓰다듬기 중에 손을 뗀 경우: pet_end → idle로 마무리하고, 톡 클릭(hit)은 재생하지 않습니다.
+      // (쓰다듬다가 시작점 근처로 돌아와서 놓아도 쓰다듬기로 처리되도록 moved가 아니라
+      //  petting 플래그로 판단합니다.)
+      if (pressState.petting) {
+        stopHeroPetHold(player);
+        playHeroReleaseReaction(player, boneName, { isDragBone: false });
+        releaseAllDraggedBones();
+        return;
+      }
+
+      if (moved < HERO_TAP_MOVE_THRESHOLD) {
+        // 거의 움직이지 않고 뗀 경우: 톡 클릭으로 처리합니다.
+        const off = heroOffsets.get(boneName);
+        if (off) {
+          off.dragging = false; // 스프링 대상이 아니므로 그냥 손을 뗍니다.
+          // 라이브러리가 누르는 순간 살짝 끌어당긴 위치를 스프링 없이 바로 원위치로 돌려서,
+          // hit 애니메이션의 atama 키프레임을 덮어쓰지 않게 합니다.
+          const tapBone = player.skeleton.findBone(boneName);
+          if (tapBone) { const tp = heroBonePose(tapBone); tp.x = off.baseX; tp.y = off.baseY; }
+          off.x = 0; off.y = 0; off.vx = 0; off.vy = 0; off.active = false;
+        }
+        if (isHitBone) {
+          heroLog('onPressEnd: 히트 리액션 재생', boneName);
+          playHeroHitReaction(player, boneName);
+          spawnHeroStarBurst(player, boneName); // 갤러리와 같은 별 이펙트
+        }
+        releaseAllDraggedBones();
+        return;
+      }
+
+      // 일정 거리 이상 끌고 놓은 경우: 눌렸던 뼈가 무엇이든(볼이든 정수리든) 항상
+      // 원래 위치로 스프링 되돌림을 겁니다. 그래서 정수리를 세게 끌고 놓아도
+      // 그 자리에 영영 붙어있지 않습니다.
+      playHeroReleaseReaction(player, boneName, { isDragBone });
+      releaseAllDraggedBones();
+      return;
+    }
+
+    heroLog('onPressEnd: pressState 또는 boneName 없음', pressState);
+    // boneName을 못 알아낸 경우: 그래도 pull 모션이 재생 중이었다면 정리하고,
+    // 밀려나 있는 뼈가 있으면 무조건 스프링으로 되돌립니다.
+    if (heroPullHold) stopHeroPullHold(player);
+    if (heroPetHold) stopHeroPetHold(player);
+    releaseAllDraggedBones();
+  };
+
+  // ★ 요청 반영: 누르고 있는 동안 실시간으로 좌표를 확인해서, 포인터가(마우스
+  //   버튼을 놓지 않은 채) 눈에 보이는 원 밖으로 나가는 그 순간 바로 onPressEnd를
+  //   호출해 "놓은 것"으로 처리합니다. 이전에는 사각형 히트 영역 때문에 원 밖으로
+  //   나가도 실제 마우스 버튼을 뗄 때까지 계속 눌려있는 것으로 인식됐습니다.
+  const onPressMove = (e) => {
+    if (!heroPressState) return;
+    const p = getEventPoint(e);
+    if (!heroPointInCircle(p.x, p.y)) {
+      heroLog('onPressMove: 원 밖으로 나가서 자동으로 놓은 것으로 처리', p);
+      // 우리 상태 정리(onPressEnd) 전에, 라이브러리 자신의 드래그 상태부터 실제로
+      // 끊어줘야 다시 원 안으로 들어왔을 때 커서를 따라오지 않습니다.
+      forceReleaseLibraryDrag(e);
+      onPressEnd(e);
+      return;
+    }
+
+    // 정수리(hitBone)를 누른 채로 일정 거리 이상 움직이면 "톡"이 아니라 쓰다듬기로 전환합니다.
+    // 참고 사이트(볼루록 갤러리)와 같은 방식: 전환 순간 pet 모션 반복 재생을 시작하고,
+    // 쓰다듬는 동안 하트가 일정 간격으로 떠오릅니다.
+    const st = heroPressState;
+    if (st.boneName && st.boneName === HERO_CHARACTER.hitBone) {
+      if (!st.petting && Math.hypot(p.x - st.x, p.y - st.y) >= HERO_TAP_MOVE_THRESHOLD) {
+        st.petting = true;
+        startHeroPetHold(player);
+        spawnHeroHeart(player, st.boneName);
+        heroLastPetHeartAt = performance.now();
+      } else if (st.petting) {
+        const nowMs = performance.now();
+        if (nowMs - heroLastPetHeartAt > HERO_PET_HEART_INTERVAL_MS) {
+          spawnHeroHeart(player, st.boneName);
+          heroLastPetHeartAt = nowMs;
+        }
+      }
+    }
+  };
+
+  canvas.addEventListener('mousedown', onPressStart);
+  canvas.addEventListener('touchstart', onPressStart, { passive: true });
+  // 캔버스 밖에서 손을 떼는 경우까지 잡기 위해 window에도 걸어둡니다.
+  window.addEventListener('mouseup', onPressEnd);
+  window.addEventListener('touchend', onPressEnd, { passive: true });
+  window.addEventListener('touchcancel', onPressEnd, { passive: true });
+  // 원 밖으로 나가는 순간을 감지하기 위한 실시간 좌표 추적입니다.
+  window.addEventListener('mousemove', onPressMove);
+  window.addEventListener('touchmove', onPressMove, { passive: true });
+  // 드래그 도중 다른 창으로 포커스가 넘어가는 경우(알트탭 등)에도 뼈가 영영
+  // 붙어있지 않도록 강제로 정리합니다.
+  window.addEventListener('blur', () => {
+    heroPressState = null;
+    if (heroPullHold) stopHeroPullHold(player);
+    if (heroPetHold) stopHeroPetHold(player);
+    releaseAllDraggedBones();
+  });
+}
+
+// 여러 Spine 런타임 버전에서 AnimationState의 "현재 트랙" 조회 메서드 이름이
+// getCurrent / getTrack로 갈리는 경우가 있어, 둘 다 지원해둡니다.
+function heroGetCurrentTrack(state) {
+  if (!state) return null;
+  if (typeof state.getCurrent === 'function') return state.getCurrent(0);
+  if (typeof state.getTrack === 'function') return state.getTrack(0);
+  return null;
+}
+
+// 볼을 "잡는 순간" 바로 시작해서, 잡고 있는 동안 계속 반복 재생되는 전용 pull 모션입니다.
+// (releaseAnimation과 달리 "놓은 후 한 번"이 아니라 "잡고 있는 내내" 재생됩니다.)
+let heroPullHold = null; // { backTo, wasLoop } — 놓았을 때 되돌아갈 애니메이션 스냅샷
+function startHeroPullHold(player) {
+  const animName = HERO_CHARACTER.pullAnimation;
+  if (!animName || !heroAnimationNames.includes(animName)) return; // 전용 모션이 없으면 스프링만으로 충분합니다
+  if (heroPullHold) return; // 이미 재생 중
+  const state = player.animationState;
+  const current = heroGetCurrentTrack(state);
+  const backTo = (current && current.animation) ? current.animation.name : heroIdleAnimation;
+  const wasLoop = current ? current.loop : true;
+  try {
+    state.setAnimation(0, animName, true); // 잡고 있는 동안 반복 재생
+  } catch (err) { return; }
+  heroPullHold = { backTo, wasLoop };
+}
+
+// 볼을 놓으면 호출됩니다 — pull 모션을 멈추고, 잡기 전에 재생 중이던 애니메이션(보통
+// idle)으로 되돌립니다. releaseAnimation이 지정돼 있고 실제로 존재하면, 되돌아가기
+// 전에 그 후속 모션을 한 번 재생합니다.
+function stopHeroPullHold(player) {
+  if (!heroPullHold) return;
+  const { backTo, wasLoop } = heroPullHold;
+  heroPullHold = null;
+  const releaseAnim = HERO_CHARACTER.releaseAnimation;
+  try {
+    const state = player.animationState;
+    if (releaseAnim && heroAnimationNames.includes(releaseAnim)) {
+      state.setAnimation(0, releaseAnim, false);
+      state.addAnimation(0, backTo || heroIdleAnimation, wasLoop !== false, 0);
+    } else {
+      state.setAnimation(0, backTo || heroIdleAnimation, wasLoop !== false);
+    }
+  } catch (err) { /* noop */ }
+}
+
+// 정수리를 "쓰다듬는 동안" 반복 재생되는 pet 모션입니다. 시작할 때 재생 중이던 애니메이션이
+// 무엇이든(idle이든, 방금 친 hit 리액션이든) 끝나면 항상 idle로 되돌립니다.
+function startHeroPetHold(player) {
+  const animName = HERO_CHARACTER.petAnimation;
+  if (!animName || !heroAnimationNames.includes(animName)) return; // 전용 모션이 없으면 하트 효과만 나옵니다
+  if (heroPetHold) return; // 이미 재생 중
+  try {
+    const entry = player.animationState.setAnimation(0, animName, true); // 쓰다듬는 동안 반복 재생
+    if (entry) { entry.mixDuration = 0.1; }
+  } catch (err) { return; }
+  heroPetHold = { backTo: heroIdleAnimation };
+}
+
+// 손을 떼면 호출됩니다 — pet 반복을 멈추고, petEndAnimation이 있으면 한 번 재생한 뒤 idle로 돌아갑니다.
+function stopHeroPetHold(player) {
+  if (!heroPetHold) return;
+  const { backTo } = heroPetHold;
+  heroPetHold = null;
+  const endAnim = HERO_CHARACTER.petEndAnimation;
+  try {
+    const state = player.animationState;
+    if (endAnim && heroAnimationNames.includes(endAnim)) {
+      state.setAnimation(0, endAnim, false);
+      state.addAnimation(0, backTo || heroIdleAnimation, true, 0);
+    } else {
+      state.setAnimation(0, backTo || heroIdleAnimation, true);
+    }
+  } catch (err) { /* noop */ }
+}
+
+// 쓰다듬는 동안 정수리 점(뼈의 현재 화면 위치)에서 하트를 1~2개 띄웁니다.
+// 위치 계산은 heroClosestControlBoneName과 같은 방식(worldToScreen)이고,
+// 이펙트 레이어와 캔버스 사이의 미세한 위치 차이는 getBoundingClientRect로 보정합니다.
+function heroEffectAnchor(player, boneName) {
+  if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return null;
+  const layer = document.getElementById('hero-effect-layer');
+  const canvas = player && player.canvas;
+  const skeleton = player && player.skeleton;
+  const renderer = player && player.sceneRenderer;
+  if (!layer || !canvas || !skeleton || !renderer || !renderer.camera) return null;
+  const bone = skeleton.findBone(boneName);
+  const world = heroBoneWorld(bone);
+  if (!world) return null;
+  const p = new spine.Vector3(skeleton.x + world.x, skeleton.y + world.y, 0);
+  renderer.camera.worldToScreen(p, canvas.clientWidth, canvas.clientHeight);
+  const canvasRect = canvas.getBoundingClientRect();
+  const layerRect = layer.getBoundingClientRect();
+  return {
+    layer,
+    x: p.x + (canvasRect.left - layerRect.left),
+    y: (canvas.clientHeight - p.y) + (canvasRect.top - layerRect.top) // worldToScreen의 y는 위아래가 뒤집혀 있어요
+  };
+}
+
+function spawnHeroHeart(player, boneName) {
+  const a = heroEffectAnchor(player, boneName);
+  if (!a) return;
+  if (a.layer.childElementCount > 14) return; // 혹시 너무 많이 쌓이면 이번 하트는 건너뜁니다
+  const count = 1 + Math.floor(Math.random() * 2);
+  for (let i = 0; i < count; i++) {
+    const el = document.createElement('span');
+    el.className = 'hero-heart';
+    el.textContent = '♥';
+    el.style.left = (a.x + (Math.random() - 0.5) * 20) + 'px';
+    el.style.top = a.y + 'px';
+    el.style.setProperty('--dx', ((Math.random() - 0.5) * 40).toFixed(1) + 'px');
+    el.style.setProperty('--dy', (-(50 + Math.random() * 40)).toFixed(1) + 'px');
+    el.style.animationDelay = (Math.random() * 0.05).toFixed(2) + 's';
+    el.addEventListener('animationend', () => el.remove());
+    a.layer.appendChild(el);
+  }
+}
+
+// 정수리를 톡 쳤을 때: 위쪽 150° 부채꼴로 별이 터져 나갑니다. 개수/거리는 위쪽 HERO_STAR_* 상수로 조절해요.
+function spawnHeroStarBurst(player, boneName) {
+  const a = heroEffectAnchor(player, boneName);
+  if (!a) return;
+  const count = HERO_STAR_COUNT_MIN + Math.floor(Math.random() * (HERO_STAR_COUNT_MAX - HERO_STAR_COUNT_MIN + 1));
+  for (let i = 0; i < count; i++) {
+    const angle = (-90 + (Math.random() - 0.5) * 150) * Math.PI / 180;
+    const dist = HERO_STAR_DIST_MIN + Math.random() * (HERO_STAR_DIST_MAX - HERO_STAR_DIST_MIN);
+    const el = document.createElement('span');
+    el.className = 'hero-star';
+    el.textContent = '★';
+    el.style.left = a.x + 'px';
+    el.style.top = a.y + 'px';
+    el.style.setProperty('--dx', (Math.cos(angle) * dist).toFixed(1) + 'px');
+    el.style.setProperty('--dy', (Math.sin(angle) * dist).toFixed(1) + 'px');
+    el.style.setProperty('--rot', (Math.random() * 180 - 90).toFixed(0) + 'deg');
+    el.style.animationDelay = (Math.random() * 0.05).toFixed(2) + 's';
+    el.addEventListener('animationend', () => el.remove());
+    a.layer.appendChild(el);
+  }
+}
+
+// 컨트롤 포인트를 일정 거리 이상 끌었다가 놓는 순간 호출됩니다. boneName은 실제로
+// 눌렸던 뼈 이름이므로(볼이든 정수리든) 그 뼈를 기준으로 스프링 되돌림을 겁니다.
+// isDragBone이면 releaseAnimation이 지정돼 있을 때 그걸 우선 재생합니다.
+function playHeroReleaseReaction(player, boneName, { isDragBone } = {}) {
+  const hasReleaseAnim = isDragBone && HERO_CHARACTER.releaseAnimation && heroAnimationNames.includes(HERO_CHARACTER.releaseAnimation);
+  if (isDragBone) {
+    try {
+      if (hasReleaseAnim) {
+        player.setAnimation(HERO_CHARACTER.releaseAnimation, false);
+        player.animationState.addAnimation(0, heroIdleAnimation, true, 0);
+      } else {
+        player.setAnimation(heroIdleAnimation, true);
+      }
+    } catch (err) { /* noop */ }
+  }
+
+  const bone = player.skeleton.findBone(boneName);
+  let off = heroOffsets.get(boneName);
+  if (bone && !off) {
+    // 혹시 초기화 시점에 캡처되지 않은 뼈라면, 지금이라도(이미 밀려난 상태겠지만)
+    // 기록해둡니다. 정상 흐름에서는 success 콜백에서 이미 캡처돼 있습니다.
+    const pose0 = heroBonePose(bone);
+    off = { x: 0, y: 0, vx: 0, vy: 0, baseX: pose0.x, baseY: pose0.y, dragging: false, active: false };
+    heroOffsets.set(boneName, off);
+  }
+  if (bone && off) {
+    // 지금까지 드래그로 밀려난 거리(baseX/Y 대비)를 초기 변위로 두고, 다음 프레임부터
+    // 물리 루프의 스프링 계산이 이 값을 0으로 감쇠시키며 되돌립니다.
+    const pose = heroBonePose(bone);
+    off.x = pose.x - off.baseX;
+    off.y = pose.y - off.baseY;
+    off.vx = 0; off.vy = 0;
+    off.dragging = false;
+    off.active = true; // 이제부터 스프링이 원위치로 되돌립니다
+  }
+}
+
+// 히트 포인트(정수리)를 톡 클릭했을 때: hitAnimation이 지정돼 있으면 그걸 우선
+// 재생하고(끝나면 angryAnimation → idle), 없으면 코드가 직접 "콩콩" 눌렸다
+// 튕겨오르는 스쿼시 효과를 계산합니다. boneName은 실제로 눌렸던 뼈 이름입니다.
+function playHeroHitReaction(player, boneName) {
+  if (HERO_CHARACTER.hitAnimation && heroAnimationNames.includes(HERO_CHARACTER.hitAnimation)) {
+    try {
+      const state = player.animationState;
+      // index와 동일: hit → hit_end → idle 순서로, 믹스/알파는 기본값 그대로 씁니다.
+      // (연타하면 setAnimation이 현재 재생을 끊고 hit을 처음부터 다시 재생합니다.)
+      state.setAnimation(0, HERO_CHARACTER.hitAnimation, false);
+      if (HERO_CHARACTER.angryAnimation && heroAnimationNames.includes(HERO_CHARACTER.angryAnimation)) {
+        state.addAnimation(0, HERO_CHARACTER.angryAnimation, false, 0);
+      }
+      state.addAnimation(0, heroIdleAnimation, true, 0);
+    } catch (err) { /* noop */ }
+    return;
+  }
+
+  // hit 애니메이션이 없을 때도 head 본을 코드로 줄이지 않습니다(애니메이션 자체에 이미 들어있는
+  // 표현이라 겹치면 두 번 줄어들어 보임). 이 경우엔 별 이펙트만 나옵니다.
+}
+
+// ---------- 볼루록 갤러리와 같은 방식의 매 프레임 물리 계산 ----------
+// SpinePlayer는 매 프레임 자체적으로 requestAnimationFrame을 돌리며 애니메이션을
+// 적용(apply)한 뒤 곧바로 그립니다. 우리 물리 루프는 success 콜백(= 이미 여러 프레임
+// 진행 중인 시점) 안에서 처음 requestAnimationFrame을 걸어, 매 프레임 SpinePlayer의
+// 콜백보다 "한 박자 뒤"에 실행되도록 합니다. idle 애니메이션이 dragBone/hitBone의
+// x/y/rotation/scale을 직접 키프레임으로 갖고 있지 않다면, 여기서 써넣은 값은
+// 다음 프레임의 apply()에서도 지워지지 않고 그대로 남아있습니다(참고 사이트의
+// applyProceduralEffects와 동일한 원리).
+function startHeroPhysicsLoop(player) {
+  let last = performance.now();
+  function loop(now) {
+    requestAnimationFrame(loop);
+    const dt = Math.min((now - last) / 1000, 0.05);
+    last = now;
+    applyHeroProceduralEffects(player, dt);
+  }
+  requestAnimationFrame(loop);
+}
+
+function applyHeroProceduralEffects(player, dt) {
+  const skeleton = player && player.skeleton;
+  if (!skeleton) return;
+
+  // 1) 볼(드래그) 스프링: 놓인 뒤 0을 향해 감쇠 진동하며 되돌아옵니다.
+  //    (참고 사이트의 k=900 / damping=24, 세미-임플리싯 오일러 적분과 동일)
+  heroOffsets.forEach((off, boneName) => {
+    const bone = skeleton.findBone(boneName);
+    if (!bone) { heroOffsets.delete(boneName); return; }
+    if (off.dragging) return; // 드래그 중엔 SpinePlayer 기본 기능이 위치를 담당합니다.
+    // ★ index(볼루록 갤러리)와 같은 방식: 스프링이 돌아가는 중일 때만 atama/cheek 위치를 씁니다.
+    //   예전엔 쉬는 동안에도 매 프레임 이 뼈들의 x/y를 셋업 위치로 고정(pin)해서,
+    //   hit / pet_idle / pull_idle 애니메이션이 atama·cheek에 넣어둔 키프레임(그리고 그걸
+    //   따라가는 head/face 트랜스폼 제약)이 전부 덮어써졌습니다.
+    if (!off.active) return;
+
+    const ax = -HERO_SPRING_STIFFNESS * off.x - HERO_SPRING_DAMPING * off.vx;
+    const ay = -HERO_SPRING_STIFFNESS * off.y - HERO_SPRING_DAMPING * off.vy;
+    off.vx += ax * dt; off.vy += ay * dt;
+    off.x += off.vx * dt; off.y += off.vy * dt;
+
+    if (Math.abs(off.x) < 0.05 && Math.abs(off.y) < 0.05 && Math.abs(off.vx) < 0.05 && Math.abs(off.vy) < 0.05) {
+      // 충분히 잦아들었으면 정확히 원위치로 스냅합니다.
+      // ★ 버그였던 지점: 여기서 heroOffsets.delete(boneName)를 했었는데, 로드 직후
+      //   초기값이 이미 (x:0, y:0, vx:0, vy:0)이라 이 조건을 즉시 만족해버려서
+      //   물리 루프가 시작되자마자(드래그를 한 번도 하기 전에!) cheek/atama 항목이
+      //   Map에서 통째로 사라졌습니다. 그 이후 볼을 당겼다 놓으면
+      //   playHeroReleaseReaction()이 "항목이 없다"고 판단해 baseX/baseY를 그
+      //   순간(=이미 당겨진 위치)으로 다시 캡처해버렸고, 그러면 변위가 0으로
+      //   계산되어 스프링이 되돌릴 거리 자체가 없어져 "당긴 자리에 고정"되는
+      //   현상이 생겼습니다. 이제는 삭제하지 않고 값만 0으로 스냅해 항목을
+      //   계속 살려둡니다(컨트롤 뼈가 몇 개 안 되니 매 프레임 계산해도 비용은 미미합니다).
+      off.x = 0; off.y = 0; off.vx = 0; off.vy = 0;
+      const posePin = heroBonePose(bone);
+      posePin.x = off.baseX; posePin.y = off.baseY; // 마지막 한 번만 정확히 원위치로 스냅
+      off.active = false;                            // 그 뒤로는 애니메이션이 자유롭게 씁니다
+      return;
+    }
+    const poseSpring = heroBonePose(bone);
+    poseSpring.x = off.baseX + off.x;
+    poseSpring.y = off.baseY + off.y;
+  });
+
+  // 2) 정수리(히트) 콩콩 스쿼시: 클릭 순간 살짝 눌렸다 튕겨오르며 원래 자세로 돌아옵니다.
+  //    참고 사이트와 동일하게, 부모 뼈의 월드 회전/스케일까지 고려해 "화면 기준"으로
+  //    항상 좌우로 납작 · 상하로 짧게 눌리도록 월드 좌표 행렬을 분해해서 계산합니다.
+  //    (리그의 부모 체인이 많이 회전돼 있어도 눌리는 방향이 비스듬해지지 않습니다.)
+  const now = performance.now();
+  heroPatEffects.forEach((eff, boneName) => {
+    const bone = skeleton.findBone(boneName);
+    const t = (now - eff.start) / HERO_HIT_DURATION_MS;
+    if (t >= 1 || !bone) {
+      if (bone) {
+        const poseReset = heroBonePose(bone);
+        poseReset.rotation = eff.baseRotation;
+        poseReset.scaleX = eff.baseScaleX;
+        poseReset.scaleY = eff.baseScaleY;
+        poseReset.shearX = eff.baseShearX;
+        poseReset.shearY = eff.baseShearY;
+        poseReset.x = eff.baseX;
+        poseReset.y = eff.baseY;
+      }
+      heroPatEffects.delete(boneName);
+      return;
+    }
+    // 참고 사이트와 동일한 바운스 커브: 임팩트 순간 확 눌렸다가 작은 반동을 남기고 감쇠합니다.
+    const bounce = Math.sin(t * Math.PI * 2.4) * Math.exp(-t * 4.5);
+    const amount = HERO_HIT_SQUASH_AMOUNT * bounce; // >0 이면 옆으로 눌림, <0 이면 살짝 늘어나는 반동
+
+    const pose = heroBonePose(bone);
+    // ★ 여기도 마찬가지 원인: parent.a/b/c/d는 이 런타임에서 parent.appliedPose에
+    //   있습니다. bone.parent에서 직접 읽으면 undefined라 determinant가 NaN이 되고
+    //   "> 1e-9" 체크가 항상 실패해서 조용히 대체 경로(로컬 축 기준)로만 빠졌습니다.
+    const parentMatrix = heroBoneWorldMatrix(bone.parent);
+    let applied = false;
+    if (parentMatrix) {
+      const { a: pa, b: pb, c: pc, d: pd } = parentMatrix;
+      // 1) 스쿼시를 적용하지 않았을 때의 월드 행렬(부모 × 기본 로컬 포즈)을 구하고,
+      const L = heroLocalMatrixFromPose(eff.baseRotation, eff.baseScaleX, eff.baseScaleY, eff.baseShearX, eff.baseShearY);
+      const a0 = pa * L.a + pb * L.c, b0 = pa * L.b + pb * L.d;
+      const c0 = pc * L.a + pd * L.c, d0 = pc * L.b + pd * L.d;
+      // 2) 그 월드 행렬을 화면 기준 x/y축으로 그대로 스케일한 뒤,
+      const sx = 1 + amount, sy = 1 - amount;
+      // 3) 다시 이 뼈의 로컬 회전/스케일/시어 값으로 되돌립니다.
+      const decomposed = heroDecomposeWorldToLocal(a0 * sx, b0 * sx, c0 * sy, d0 * sy, pa, pb, pc, pd);
+      if (decomposed) {
+        pose.rotation = decomposed.rotation;
+        pose.scaleX = decomposed.scaleX;
+        pose.scaleY = decomposed.scaleY;
+        pose.shearX = decomposed.shearX;
+        pose.shearY = decomposed.shearY;
+
+        // 임팩트 순간 살짝 아래로(화면 기준) 눌리는 dip도 같은 방식으로 월드 → 로컬 변환합니다.
+        const det = pa * pd - pb * pc;
+        if (Math.abs(det) > 1e-9) {
+          const dip = Math.max(bone.data.length || 20, 20) * 0.15 * amount;
+          const dipWorldY = -dip;
+          const invDet = 1 / det;
+          const localDx = (0 * pd - dipWorldY * pb) * invDet;
+          const localDy = (dipWorldY * pa - 0 * pc) * invDet;
+          pose.x = eff.baseX + localDx;
+          pose.y = eff.baseY + localDy;
+        }
+        applied = true;
+      }
+    }
+    if (!applied) {
+      // 부모 뼈 정보가 없거나(루트 뼈) 계산이 안 되는 경우의 대체 경로: 로컬 축 기준으로 처리합니다.
+      pose.rotation = eff.baseRotation;
+      pose.scaleX = eff.baseScaleX * (1 + amount);
+      pose.scaleY = eff.baseScaleY * (1 - amount);
+      pose.shearX = eff.baseShearX;
+      pose.shearY = eff.baseShearY;
+      const dip = Math.max(bone.data.length || 20, 20) * 0.15 * amount;
+      pose.x = eff.baseX;
+      pose.y = eff.baseY - dip;
+    }
+  });
+}
+
+// ---------- 참고 사이트와 동일한 방식의 월드 ↔ 로컬 행렬 변환 헬퍼 ----------
+function heroDegToRad(deg) { return deg * Math.PI / 180; }
+function heroRadToDeg(rad) { return rad * 180 / Math.PI; }
+
+// 기본(스쿼시 적용 전) 로컬 포즈로부터 2x2 로컬 행렬(회전+스케일+시어, 이동 제외)을 만듭니다.
+// Spine의 Bone.updateWorldTransform과 동일한 공식입니다.
+function heroLocalMatrixFromPose(rotation, scaleX, scaleY, shearX, shearY) {
+  const rotationY = rotation + 90 + shearY;
+  return {
+    a: Math.cos(heroDegToRad(rotation + shearX)) * scaleX,
+    b: Math.cos(heroDegToRad(rotationY)) * scaleY,
+    c: Math.sin(heroDegToRad(rotation + shearX)) * scaleX,
+    d: Math.sin(heroDegToRad(rotationY)) * scaleY
+  };
+}
+
+// 원하는 월드 2x2 행렬(wa,wb,wc,wd)과 부모의 현재 월드 2x2 행렬(pa,pb,pc,pd)이 주어졌을 때,
+// 그 월드 행렬을 재현할 로컬 rotation/scaleX/scaleY/shearY(shearX는 0으로 고정)를 계산합니다.
+function heroDecomposeWorldToLocal(wa, wb, wc, wd, pa, pb, pc, pd) {
+  const det = pa * pd - pb * pc;
+  if (Math.abs(det) < 1e-9) return null;
+  const pid = 1 / det;
+  const ia = pid * pd, id = pid * pa, ib = pid * pb, ic = pid * pc;
+  const ra = ia * wa - ib * wc;
+  const rb = ia * wb - ib * wd;
+  const rc = id * wc - ic * wa;
+  const rd = id * wd - ic * wb;
+  const scaleX = Math.sqrt(ra * ra + rc * rc);
+  if (scaleX <= 0.0001) return null; // 뒤집혀서 선으로 뭉개진 경우: 이번 프레임은 건너뜁니다.
+  const rotation = Math.atan2(rc, ra);
+  const scaleY = Math.sqrt(rb * rb + rd * rd);
+  const angle2 = Math.atan2(rd, rb);
+  const shearY = angle2 - rotation - Math.PI / 2;
+  return {
+    rotation: heroRadToDeg(rotation),
+    scaleX,
+    scaleY,
+    shearX: 0,
+    shearY: heroRadToDeg(shearY)
+  };
+}
+
+/* ============================================================
+   스크롤 리빌
+============================================================ */
+const io = new IntersectionObserver((entries) => {
+  entries.forEach((entry) => { if (entry.isIntersecting) entry.target.classList.add('in'); });
+}, { threshold: 0.15 });
+document.querySelectorAll('.reveal').forEach((el) => io.observe(el));
+</script>
+
+</body>
+</html>
