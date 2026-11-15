@@ -484,17 +484,19 @@
    함께 넣으면 두 줄로 각각 표시됩니다.
 ============================================================ */
 const PROJECTS = [
-  {
-    title: "임시 샘플",
-    category: "2차창작 · 블루록 x 트릭컬 리바이브 스타일 모션",
+    {
+    title: "라이브 월페이퍼",
+    category: "2차창작 · 라이브 월페이퍼",
     isDemo: true,
     badgeType: "fanart",
-    jsonUrl: "assets/cgr/CGR.json",
-    atlasUrl: "assets/cgr/CGR.atlas",
-    // CUSTOMIZE: 원화 작가 크레딧. 필요 없으면 illustrator 자체를 지워도 됩니다.
-    // CUSTOMIZE: isDemo를 true로 바꾸고 실제 파일을 연결한 뒤,
-    // 마우스로 드래그하게 할 뼈 이름을 여기에 넣어주세요. (없으면 빈 배열)
-    original: { name: "블루 록 (카네시로 무네유키, 노무라 유스케), 트릭컬 리바이브 (에피드 게임즈)" },
+    jsonUrl: "assets/wallpaper-nfc/nfc_renamed.json",
+    atlasUrl: "assets/wallpaper-nfc/nfc_renamed.atlas",
+    // ★ 표시 영역 제한(1920x1080): x,y는 영역의 "왼쪽 아래" 모서리(스파인 좌표, y는 위가 +).
+    //   위치가 안 맞으면 debugRender를 true로 바꿔 테두리를 보면서 x,y를 조절하세요.
+    viewport: { x: -960, y: -540, width: 1920, height: 1080, debugRender: false },
+    // CUSTOMIZE: 외주는 클라이언트 동의 없이 공개하면 안 되니, 계약서에
+    // 포트폴리오 게재 조항이 있는지 꼭 확인하세요.
+    illustrator: { name: "로하(본인)" },
     controlBones: []
   },
   {
@@ -553,18 +555,6 @@ const PROJECTS = [
     // 포트폴리오 게재 조항이 있는지 꼭 확인하세요.
     illustrator: { name: "江波, https://x.com/KomSuserTod" },
     controlBones: []
-  },
-  {
-    title: "empty",
-    category: "개인 작업물 · 일러스트 애니메이팅",
-    isDemo: false,
-    badgeType: "personal",
-    jsonUrl: "assets/MZD/MZD.json",
-    atlasUrl: "assets/MZD/MZD.atlas",
-    // CUSTOMIZE: 외주는 클라이언트 동의 없이 공개하면 안 되니, 계약서에
-    // 포트폴리오 게재 조항이 있는지 꼭 확인하세요.
-    illustrator: { name: "none" },
-    controlBones: []
   }
 ];
 
@@ -590,6 +580,7 @@ PROJECTS.forEach((proj, i) => {
 
   const stage = document.createElement('div');
   stage.className = 'work-stage';
+  if (proj.viewport) stage.style.aspectRatio = proj.viewport.width + ' / ' + proj.viewport.height;
 
   if (proj.isDemo) {
     // ★ 요청 반영: 데모 카드는 더 이상 모션을 자동으로 순환 재생하지 않습니다.
@@ -698,6 +689,18 @@ PROJECTS.forEach((proj, i) => {
 // 컨트롤 패널(Animations 목록)이 만들어지는 과정에서 재생 상태가 다시 초기화되어
 // "드롭다운에서 직접 골라야만 재생되는" 문제가 생깁니다.
 // animation을 생성자 옵션에 처음부터 넣어주면 그 문제 없이 바로 재생됩니다.
+// 작업물 항목의 viewport를 SpinePlayer 옵션으로 바꿔줍니다. (없으면 기존처럼 자동 맞춤)
+// 여백(pad)을 0으로 줘야 지정한 영역이 정확히 그대로 보입니다.
+function buildProjectViewport(proj) {
+  const v = proj && proj.viewport;
+  if (!v) return undefined;
+  return {
+    x: v.x, y: v.y, width: v.width, height: v.height,
+    padLeft: 0, padRight: 0, padTop: 0, padBottom: 0,
+    debugRender: !!v.debugRender
+  };
+}
+
 async function pickStartAnimation(jsonUrl, preferred = 'idle') {
   try {
     const res = await fetch(jsonUrl);
@@ -743,6 +746,7 @@ window.addEventListener('load', () => {
       skeleton: proj.jsonUrl,
       atlas: proj.atlasUrl,
       animation: startAnim || undefined, // 미리 알아낸 이름으로 바로 재생 시작
+      viewport: buildProjectViewport(proj),
       showControls: false,
       interactive: false, // 썸네일 클릭으로 재생/정지 토글되지 않게
       alpha: true,
@@ -784,6 +788,25 @@ async function openWorkModal(i) {
   const proj = PROJECTS[i];
   if (!proj.isDemo || proj.linkUrl || !window.spine) return;
 
+  // viewport가 있는 작업물은 모달 스테이지도 같은 비율로 고정합니다(없으면 원래 스타일 복원).
+  const modalEl = document.querySelector('.work-modal');
+  const modalStageEl = document.querySelector('.work-modal-stage');
+  const vp = proj.viewport;
+  if (vp) {
+    const ratio = vp.width / vp.height;
+    modalStageEl.style.aspectRatio = vp.width + ' / ' + vp.height;
+    modalStageEl.style.flex = 'none';
+    modalStageEl.style.minHeight = '0';
+    // 데스크톱에서는 화면 높이에 맞춰 모달 폭을 줄여 비율이 깨지지 않게 합니다.
+    modalEl.style.width = window.matchMedia('(min-width: 641px)').matches
+      ? 'min(94vw, 1100px, calc((90vh - 100px) * ' + ratio + '))' : '';
+  } else {
+    modalStageEl.style.aspectRatio = '';
+    modalStageEl.style.flex = '';
+    modalStageEl.style.minHeight = '';
+    modalEl.style.width = '';
+  }
+
   workModalTitle.textContent = proj.title;
   workModalCat.textContent = proj.category;
   workModalOverlay.classList.add('open');
@@ -808,6 +831,7 @@ async function openWorkModal(i) {
     skeleton: proj.jsonUrl,
     atlas: proj.atlasUrl,
     animation: startAnim || undefined, // 미리 알아낸 이름으로 바로 재생 시작
+    viewport: buildProjectViewport(proj),
     showControls: true,
     controlBones: bones,
     alpha: true,
