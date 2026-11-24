@@ -197,6 +197,7 @@
   .works-filter .row{ display: flex; flex-wrap: wrap; gap: 8px; }
   .works-filter button{ font-family: var(--mono); font-size: 12px; height: 34px; padding: 0 14px; border: 1px solid var(--line); border-radius: 999px; background: transparent; color: var(--ink-dim); cursor: pointer; transition: border-color .2s, color .2s, background .2s; }
   .works-filter button:hover{ border-color: var(--bone); color: var(--bone); }
+  .works-filter button:disabled{ opacity: .35; cursor: default; pointer-events: none; }
   .works-filter button.on{ border-color: var(--bone); background: var(--bone); color: var(--bg); }
   .works-empty{ grid-column: 1 / -1; text-align: center; color: var(--ink-dim); font-size: 14px; padding: 40px 0; }
   /* 영상 카드(Live2D 등): 카드 썸네일 / 모달 공용 */
@@ -547,7 +548,7 @@ const PROJECTS = [
     viewport: { x: -960, y: -540, width: 1920, height: 1080, debugRender: false },
     // CUSTOMIZE: 외주는 클라이언트 동의 없이 공개하면 안 되니, 계약서에
     // 포트폴리오 게재 조항이 있는지 꼭 확인하세요.
-    illustrator: { name: "로하(본인)" },
+    illustrator: { name: "로하" },
     original: { name: "트릭컬 리바이브 (에피드 게임즈)", url: "https://trickcal.com/" },
     controlBones: []
   },
@@ -566,7 +567,7 @@ const PROJECTS = [
     downloadAvailableAt: "2026-12-13T18:00:00+09:00",                  // 12월 13일 오후 6시(한국 시간)에 자동으로 열림
     downloadLockedLabel: "🔒 12월 13일 오후 6시 공개",
     viewport: { x: -960, y: -540, width: 1920, height: 1080 },        // 화면 비율 16:9
-    illustrator: { name: "로하(본인)" },
+    illustrator: { name: "로하" },
     original: { name: "트릭컬 리바이브 (에피드 게임즈)", url: "https://trickcal.com/" },
     controlBones: []
   },
@@ -582,7 +583,6 @@ const PROJECTS = [
     badgeType: "fanart",
     jsonUrl: "assets/cgr/CGR.json",
     atlasUrl: "assets/cgr/CGR.atlas",
-    illustrator: { name: "로하(본인)" },
     // CUSTOMIZE: 클릭하면 이 주소로 새 탭에서 이동합니다 (썸네일 유무와 상관없이 항상 적용됨)
     linkUrl: "https://rororoha68.github.io/bolluelock/",
     // CUSTOMIZE: 썸네일용 Spine 파일이 아직 없을 때 보여줄 한 줄 설명 (isDemo:false일 때만 사용됨)
@@ -651,7 +651,7 @@ const PROJECTS = [
     videoUrl: "assets/live2d/model.webm",
     posterUrl: "assets/live2d/poster.jpg",
     viewport: { width: 16, height: 10.5 },
-    illustrator: { name: "로하(본인)" }
+    illustrator: { name: "로하" }
   },
   */
 ];
@@ -713,23 +713,33 @@ const cardVisObserver = new IntersectionObserver((entries) => {
 // ★ 필터: 종류(badgeType) / 연도(year). 인덱스는 항상 PROJECTS 기준을 그대로 씁니다.
 const worksFilter = { type: 'all', year: 'all' };
 const worksFilterEl = document.getElementById('works-filter');
+const projType = (p) => p.badgeType || (p.isDemo ? 'demo' : 'empty');
+const projYear = (p) => (p.year ? String(p.year) : '');
+// 종류·연도 필터는 동시에 적용됩니다(AND). 결과는 연도 최신순(같은 연도는 PROJECTS에 적은 순서 그대로),
+// 연도가 없는 작업물은 맨 뒤로 갑니다.
 function filteredIndices() {
   const out = [];
   PROJECTS.forEach((proj, i) => {
-    if (worksFilter.type !== 'all' && (proj.badgeType || (proj.isDemo ? 'demo' : 'empty')) !== worksFilter.type) return;
-    if (worksFilter.year !== 'all' && String(proj.year) !== worksFilter.year) return;
+    if (worksFilter.type !== 'all' && projType(proj) !== worksFilter.type) return;
+    if (worksFilter.year !== 'all' && projYear(proj) !== worksFilter.year) return;
     out.push(i);
   });
-  return out;
+  return out.sort((x, y) => (Number(PROJECTS[y].year) || 0) - (Number(PROJECTS[x].year) || 0) || x - y);
 }
 function renderWorksFilter() {
   const types = [];
-  PROJECTS.forEach((p) => { const k = p.badgeType || (p.isDemo ? 'demo' : 'empty'); if (!types.includes(k)) types.push(k); });
-  const years = [...new Set(PROJECTS.map((p) => p.year).filter(Boolean))].sort((a, b) => b - a);
+  PROJECTS.forEach((p) => { const k = projType(p); if (!types.includes(k)) types.push(k); });
+  const years = [...new Set(PROJECTS.map(projYear).filter(Boolean))].sort((a, b) => b - a);   // 최신 연도부터
   // 고를 게 없으면(종류 1개, 연도 1개 이하) 필터 자체를 숨깁니다.
   worksFilterEl.hidden = types.length < 2 && years.length < 2;
   if (worksFilterEl.hidden) return;
   worksFilterEl.innerHTML = '';
+  // 다른 쪽 필터를 고려해서, 눌러도 결과가 0개인 버튼은 비활성화합니다.
+  const countFor = (key, val) => PROJECTS.filter((p) => {
+    const t = key === 'type' ? val : worksFilter.type;
+    const y = key === 'year' ? val : worksFilter.year;
+    return (t === 'all' || projType(p) === t) && (y === 'all' || projYear(p) === y);
+  }).length;
   const addRow = (items, key) => {
     if (items.length < 2) return;
     const row = document.createElement('div');
@@ -738,7 +748,10 @@ function renderWorksFilter() {
       const b = document.createElement('button');
       b.type = 'button';
       b.textContent = label;
-      if (worksFilter[key] === String(val)) { b.classList.add('on'); b.setAttribute('aria-pressed', 'true'); } else b.setAttribute('aria-pressed', 'false');
+      const on = worksFilter[key] === String(val);
+      if (on) b.classList.add('on');
+      b.setAttribute('aria-pressed', on ? 'true' : 'false');
+      if (!on && countFor(key, String(val)) === 0) b.disabled = true;
       b.addEventListener('click', () => {
         worksFilter[key] = String(val);
         renderWorksPage(0, false);
