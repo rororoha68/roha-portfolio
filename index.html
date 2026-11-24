@@ -184,6 +184,13 @@
   /* ---------- WORKS ---------- */
   .works-grid{ display: grid; grid-template-columns: repeat(2, 1fr); gap: 22px; }
   @media (max-width: 780px){ .works-grid{ grid-template-columns: 1fr; } }
+  /* 페이지 넘김 (작업물이 WORKS_PER_PAGE개를 넘으면 자동으로 나타남) */
+  .works-pager{ display: flex; justify-content: center; align-items: center; flex-wrap: wrap; gap: 8px; margin-top: 30px; }
+  .works-pager[hidden]{ display: none; }
+  .works-pager button{ font-family: var(--mono); font-size: 12.5px; min-width: 38px; height: 38px; padding: 0 12px; border: 1px solid var(--line); border-radius: 999px; background: transparent; color: var(--ink-dim); cursor: pointer; transition: border-color .2s, color .2s, background .2s; }
+  .works-pager button:hover:not(:disabled){ border-color: var(--bone); color: var(--bone); }
+  .works-pager button.on{ border-color: var(--bone); background: var(--bone); color: var(--bg); }
+  .works-pager button:disabled{ opacity: .35; cursor: default; }
   .work-card{ border: 1px solid var(--line); border-radius: var(--radius); background: var(--panel); overflow: hidden; transition: border-color .2s ease; }
   .work-card:hover{ border-color: var(--bone); }
   .work-stage{ aspect-ratio: 16 / 10.5; background: radial-gradient(var(--line) 1px, transparent 1px) 0 0/20px 20px, var(--bg); position: relative; display: flex; align-items: center; justify-content: center; }
@@ -409,6 +416,7 @@
       <p class="section-sub">데모 카드를 클릭하면 크게 열리는 화면에서 <b>화살표(‹›)로 모션을 직접 넘겨볼 수 있어요</b>.</p>
     </div>
     <div class="works-grid" id="works-grid"><!-- JS가 채웁니다 --></div>
+    <nav class="works-pager" id="works-pager" aria-label="작업물 페이지" hidden></nav>
   </div>
 </section>
 
@@ -517,7 +525,7 @@ const PROJECTS = [
     viewport: { x: -960, y: -540, width: 1920, height: 1080, debugRender: false },
     // CUSTOMIZE: 외주는 클라이언트 동의 없이 공개하면 안 되니, 계약서에
     // 포트폴리오 게재 조항이 있는지 꼭 확인하세요.
-    illustrator: { name: "로하(본인)" },
+    illustrator: { name: "로하" },
     original: { name: "트릭컬 리바이브 (에피드 게임즈)", url: "https://trickcal.com/" },
     controlBones: []
   },
@@ -535,7 +543,7 @@ const PROJECTS = [
     downloadAvailableAt: "2026-12-13T18:00:00+09:00",                  // 12월 13일 오후 6시(한국 시간)에 자동으로 열림
     downloadLockedLabel: "🔒 12월 13일 오후 6시 공개",
     viewport: { x: -960, y: -540, width: 1920, height: 1080 },        // 화면 비율 16:9
-    illustrator: { name: "로하(본인)" },
+    illustrator: { name: "로하" },
     original: { name: "트릭컬 리바이브 (에피드 게임즈)", url: "https://trickcal.com/" },
     controlBones: []
   },
@@ -585,7 +593,6 @@ const PROJECTS = [
     // CUSTOMIZE: 2차창작은 원화/원작 크레딧을 꼭 남겨주세요.
     // CUSTOMIZE: 원작(원본 IP/작품) 표기. 예: 블루록 x 트릭컬 리바이브 2차창작이면
     // 각 원작 타이틀과 공식 링크를 넣어주세요.
-    illustrator: { name: "로하(본인)" },
     original: [
       { name: "블루 록 (카네시로 무네유키, 노무라 유스케)", url: "https://bluelock-kc.com/" },
       { name: "트릭컬 리바이브 (에피드 게임즈)", url: "https://trickcal.com/" }
@@ -628,7 +635,15 @@ function getBadge(proj) {
   return BADGE_TYPES[key] || BADGE_TYPES.empty;
 }
 
-PROJECTS.forEach((proj, i) => {
+// 한 페이지에 보여줄 작업물 수. 카드마다 Spine/WebGL(월페이퍼 카드는 영상 포함)이 동시에 돌아가서
+// 많으면 렉이 걸리므로, 이 개수를 넘으면 자동으로 다음 페이지로 나뉩니다.
+// (PROJECTS 순서대로 채워집니다. 페이지를 넘기면 이전 페이지의 플레이어는 모두 해제됩니다.)
+const WORKS_PER_PAGE = 4;
+let worksPage = 0;
+let worksLoaded = false;        // window load 이후에만 Spine 플레이어를 만들 수 있음
+const cardPlayers = {};         // 프로젝트 index → 현재 살아있는 썸네일 SpinePlayer
+
+function buildCard(proj, i) {
   const card = document.createElement('div');
   card.className = 'work-card reveal';
 
@@ -758,7 +773,57 @@ PROJECTS.forEach((proj, i) => {
   card.appendChild(stage);
   card.appendChild(meta);
   grid.appendChild(card);
-});
+}
+
+// ---------- 페이지 렌더링 ----------
+const worksPager = document.getElementById('works-pager');
+const worksPageCount = () => Math.max(1, Math.ceil(PROJECTS.length / WORKS_PER_PAGE));
+
+function disposeCardPlayers() {
+  Object.keys(cardPlayers).forEach((k) => {
+    try { if (cardPlayers[k] && typeof cardPlayers[k].dispose === 'function') cardPlayers[k].dispose(); } catch (err) { /* noop */ }
+    delete cardPlayers[k];
+  });
+}
+
+function renderWorksPage(page, userInitiated) {
+  worksPage = Math.min(Math.max(0, page), worksPageCount() - 1);
+  disposeCardPlayers();          // 이전 페이지의 WebGL 컨텍스트 해제
+  grid.innerHTML = '';           // 월페이퍼 iframe도 함께 사라짐
+  liveRefs.length = 0;
+
+  const start = worksPage * WORKS_PER_PAGE;
+  PROJECTS.slice(start, start + WORKS_PER_PAGE).forEach((proj, k) => buildCard(proj, start + k));
+
+  // 페이지를 넘길 때는 스크롤 리빌을 기다리지 않고 바로 보이게
+  if (userInitiated) grid.querySelectorAll('.reveal').forEach((el) => el.classList.add('in'));
+
+  renderWorksPager();
+  if (worksLoaded) initPageCardPlayers();
+  if (userInitiated) document.getElementById('works').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function renderWorksPager() {
+  const pages = worksPageCount();
+  worksPager.hidden = pages <= 1;
+  if (pages <= 1) return;
+  worksPager.innerHTML = '';
+  const mk = (label, onClick, opts = {}) => {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.textContent = label;
+    if (opts.aria) b.setAttribute('aria-label', opts.aria);
+    if (opts.on) { b.classList.add('on'); b.setAttribute('aria-current', 'page'); }
+    if (opts.disabled) b.disabled = true;
+    else b.addEventListener('click', onClick);
+    worksPager.appendChild(b);
+  };
+  mk('‹', () => renderWorksPage(worksPage - 1, true), { aria: '이전 페이지', disabled: worksPage === 0 });
+  for (let p = 0; p < pages; p++) mk(String(p + 1), () => renderWorksPage(p, true), { on: p === worksPage, aria: (p + 1) + '페이지' });
+  mk('›', () => renderWorksPage(worksPage + 1, true), { aria: '다음 페이지', disabled: worksPage === pages - 1 });
+}
+
+renderWorksPage(0, false);
 
 // ---------- 자동재생 관련 헬퍼 ----------
 // 스켈레톤 JSON을 SpinePlayer 생성 "전에" 먼저 한 번 읽어서 애니메이션 이름을 알아냅니다.
@@ -805,47 +870,58 @@ function forcePlay(player, name) {
 }
 
 // ---------- 작은 카드: idle 썸네일 초기화 ----------
+// 현재 페이지에 보이는 카드의 Spine 플레이어만 만듭니다. (페이지를 넘기면 renderWorksPage가 다시 호출)
+async function initCardPlayer(proj, i) {
+  if (!proj.isDemo || proj.embedUrl) return;   // 임베드 카드는 iframe이 알아서 재생
+  const ref = liveRefs[i];
+  if (!ref) return;
+  const startAnim = await pickStartAnimation(proj.jsonUrl);
+  // 로딩 중에 페이지가 넘어가서 카드가 사라졌다면 만들지 않습니다.
+  if (liveRefs[i] !== ref || !document.getElementById('player-' + i)) return;
+  cardPlayers[i] = new spine.SpinePlayer('player-' + i, {
+    skeleton: proj.jsonUrl,
+    atlas: proj.atlasUrl,
+    animation: startAnim || undefined, // 미리 알아낸 이름으로 바로 재생 시작
+    viewport: buildProjectViewport(proj),
+    showControls: false,
+    interactive: false, // 썸네일 클릭으로 재생/정지 토글되지 않게
+    alpha: true,
+    backgroundColor: '#00000000',
+    premultipliedAlpha: true,
+    success: function (player) {
+      const anims = player.skeleton.data.animations.map(a => a.name);
+      const start = startAnim || (anims.includes('idle') ? 'idle' : anims[0]);
+      // ★ 요청 반영: 더 이상 이 프로젝트의 모든 모션을 순서대로 자동 재생하지
+      // 않습니다. idle(또는 첫 번째) 모션 하나만 조용히 반복 재생하고, 나머지
+      // 모션들은 카드를 클릭해 모달을 열면 그 안에서 화살표로 직접 넘겨볼 수
+      // 있습니다.
+      forcePlay(player, start);
+      if (ref.idleTag) ref.idleTag.textContent = '▶ ' + start;
+    },
+    error: function (player, msg) {
+      console.error('[Spine] "' + proj.title + '" 썸네일 로딩 실패:', msg);
+      if (ref.idleTag) ref.idleTag.textContent = '⚠ 로딩 실패';
+    }
+  });
+}
+
+function initPageCardPlayers() {
+  const start = worksPage * WORKS_PER_PAGE;
+  PROJECTS.slice(start, start + WORKS_PER_PAGE).forEach((proj, k) => initCardPlayer(proj, start + k));
+}
+
 window.addEventListener('load', () => {
   // 진단용: spine-player.js 자체가 로드되지 않았다면 (CDN 차단, 오프라인 등)
   // 화면에 바로 표시해서 콘솔을 안 열어도 원인을 알 수 있게 합니다.
   if (!window.spine) {
     console.error('[Spine] spine-player.js 가 로드되지 않았습니다. CDN(unpkg.com) 접근이 막혔거나, 이 파일을 file://로 직접 열었을 가능성이 있습니다. 로컬 서버(예: VS Code Live Server, `npx serve`)로 열어보세요.');
-    PROJECTS.forEach((proj, i) => {
-      if (proj.isDemo && liveRefs[i].idleTag) liveRefs[i].idleTag.textContent = '⚠ 로딩 실패';
-    });
+    liveRefs.forEach((ref) => { if (ref && ref.idleTag) ref.idleTag.textContent = '⚠ 로딩 실패'; });
     return;
   }
-
-  PROJECTS.forEach(async (proj, i) => {
-    if (!proj.isDemo || proj.embedUrl) return;   // 임베드 카드는 iframe이 알아서 재생
-    const startAnim = await pickStartAnimation(proj.jsonUrl);
-    new spine.SpinePlayer('player-' + i, {
-      skeleton: proj.jsonUrl,
-      atlas: proj.atlasUrl,
-      animation: startAnim || undefined, // 미리 알아낸 이름으로 바로 재생 시작
-      viewport: buildProjectViewport(proj),
-      showControls: false,
-      interactive: false, // 썸네일 클릭으로 재생/정지 토글되지 않게
-      alpha: true,
-      backgroundColor: '#00000000',
-      premultipliedAlpha: true,
-      success: function (player) {
-        const anims = player.skeleton.data.animations.map(a => a.name);
-        const start = startAnim || (anims.includes('idle') ? 'idle' : anims[0]);
-        // ★ 요청 반영: 더 이상 이 프로젝트의 모든 모션을 순서대로 자동 재생하지
-        // 않습니다. idle(또는 첫 번째) 모션 하나만 조용히 반복 재생하고, 나머지
-        // 모션들은 카드를 클릭해 모달을 열면 그 안에서 화살표로 직접 넘겨볼 수
-        // 있습니다.
-        forcePlay(player, start);
-        if (liveRefs[i].idleTag) liveRefs[i].idleTag.textContent = '▶ ' + start;
-      },
-      error: function (player, msg) {
-        console.error('[Spine] "' + proj.title + '" 썸네일 로딩 실패:', msg);
-        liveRefs[i].idleTag.textContent = '⚠ 로딩 실패';
-      }
-    });
-  });
+  worksLoaded = true;
+  initPageCardPlayers();
 });
+
 
 // ---------- 큰 모달: 클릭 시 확대 + 전체 모션 전환/상호작용 ----------
 const workModalOverlay = document.getElementById('work-modal-overlay');
