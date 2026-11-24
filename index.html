@@ -177,8 +177,7 @@
   .pipeline{ display: flex; overflow-x: auto; gap: 0; border: 1px solid var(--line); border-radius: var(--radius); background: var(--panel); }
   .p-step{ flex: 1 0 180px; padding: 26px 22px; border-right: 1px dashed var(--line); position: relative; }
   .p-step:last-child{ border-right: none; }
-  .p-frame{ font-family: var(--mono); font-size: 11px; color: var(--ink-dim); }
-  .p-diamond{ width: 10px; height: 10px; background: var(--bone); transform: rotate(45deg); margin: 14px 0 16px; }
+  .p-diamond{ width: 10px; height: 10px; background: var(--bone); transform: rotate(45deg); margin: 4px 0 16px; }
   .p-step h4{ font-family: var(--display); font-size: 15px; margin: 0 0 6px; }
   .p-step p{ font-size: 12.5px; color: var(--ink-dim); margin: 0; text-wrap: pretty; }
 
@@ -190,6 +189,10 @@
   .work-stage{ aspect-ratio: 16 / 10.5; background: radial-gradient(var(--line) 1px, transparent 1px) 0 0/20px 20px, var(--bg); position: relative; display: flex; align-items: center; justify-content: center; }
   .work-stage.is-live{ cursor: pointer; }
   .work-stage .spine-player-embed{ width: 100%; height: 100%; pointer-events: none; }
+  /* 월페이퍼 엔진용 웹 월페이퍼를 그대로 끼워 넣는 iframe (카드 썸네일 / 모달 공용) */
+  .wp-embed{ position: absolute; inset: 0; width: 100%; height: 100%; border: 0; background: #1a1a22; }
+  .work-stage .wp-embed{ pointer-events: none; }   /* 카드에서는 클릭이 카드(모달 열기)로 가도록 */
+  .work-modal-stage > .wp-embed{ border-radius: 0 0 var(--radius) var(--radius); }
   .stage-hint{ position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; background: rgba(10,12,13,0.45); opacity: 0; transition: opacity .2s ease; font-family: var(--mono); font-size: 12.5px; color: var(--ink); gap: 6px; pointer-events: none; z-index: 5; }
   .work-stage.is-live:hover .stage-hint{ opacity: 1; }
   .idle-tag{ position: absolute; left: 10px; top: 10px; font-family: var(--mono); font-size: 10.5px; background: rgba(0,0,0,0.55); color: var(--bone); padding: 4px 9px; border-radius: 999px; pointer-events: none; z-index: 5; }
@@ -203,6 +206,7 @@
   .work-meta{ padding: 20px 22px; display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; }
   .work-meta h3{ font-family: var(--display); font-size: 18px; margin: 0 0 6px; font-weight: 600; }
   .work-meta .cat{ font-family: var(--mono); font-size: 11.5px; color: var(--mesh); }
+  .work-meta .desc{ font-size: 13.5px; line-height: 1.65; color: var(--ink-dim); margin: 10px 0 0; text-wrap: pretty; white-space: pre-line; }
   .work-meta .credit{ font-family: var(--mono); font-size: 11px; color: var(--ink-dim); margin-top: 8px; display: block; }
   .work-meta .credit a{ color: var(--ink-dim); text-decoration: none; border-bottom: 1px dotted var(--line); transition: color .2s, border-color .2s; }
   .work-meta .credit a:hover{ color: var(--bone); border-color: var(--bone); }
@@ -230,10 +234,17 @@
   .work-modal-head{ display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; padding: 20px 22px; border-bottom: 1px solid var(--line); border-radius: var(--radius) var(--radius) 0 0; background: var(--panel); }
   .work-modal-title{ font-family: var(--display); font-size: 20px; font-weight: 600; margin: 0 0 4px; }
   .work-modal-cat{ font-family: var(--mono); font-size: 12px; color: var(--mesh); }
+  .work-modal-desc{ font-size: 13px; line-height: 1.6; color: var(--ink-dim); margin: 8px 0 0; white-space: pre-line; }
+  .work-modal-desc:empty{ display: none; }
   .work-modal-close{ flex: none; width: 34px; height: 34px; border-radius: 50%; border: 1px solid var(--line); background: transparent; color: var(--ink); font-size: 16px; line-height: 1; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: border-color .2s, color .2s; }
   .work-modal-close:hover{ border-color: var(--bone); color: var(--bone); }
   .work-modal-stage{ flex: 1; min-height: min(60vh, 560px); background: radial-gradient(var(--line) 1px, transparent 1px) 0 0/24px 24px, var(--bg); position: relative; border-radius: 0 0 var(--radius) var(--radius); }
   .work-modal-player{ width: 100%; height: 100%; }
+  .work-modal-actions{ display: flex; align-items: center; gap: 10px; flex: none; }
+  .work-modal-download{ display: inline-flex; align-items: center; gap: 6px; font-family: var(--mono); font-size: 12px; color: var(--bone); text-decoration: none; border: 1px solid var(--bone); border-radius: 999px; padding: 7px 14px; white-space: nowrap; transition: background .2s, color .2s; }
+  .work-modal-download:hover{ background: var(--bone); color: var(--bg); }
+  .work-modal-download[hidden]{ display: none; }
+  .work-modal-download.is-locked{ opacity: .6; border-style: dashed; cursor: default; pointer-events: none; }
   .work-modal-ik-hint{ position: absolute; left: 16px; bottom: 16px; z-index: 6; font-family: var(--mono); font-size: 11.5px; color: var(--ik); background: rgba(10,12,13,0.6); border: 1px solid var(--ik); padding: 6px 12px; border-radius: 999px; pointer-events: none; display: none; }
   .work-modal-nav{ position: absolute; top: 50%; transform: translateY(-50%); z-index: 7; width: 44px; height: 44px; border-radius: 50%; border: 1px solid var(--line); background: rgba(10,12,13,0.55); color: var(--ink); font-size: 20px; line-height: 1; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: border-color .18s, color .18s, background .18s, transform .18s; }
   .work-modal-nav:hover{ border-color: var(--bone); color: var(--bone); background: rgba(10,12,13,0.8); }
@@ -375,11 +386,11 @@
       <p class="section-sub">하나의 캐릭터가 완성되기까지 거치는 실제 단계입니다.</p>
     </div>
     <div class="pipeline reveal">
-      <div class="p-step"><span class="p-frame">f001</span><div class="p-diamond"></div><h4>컨셉 분석</h4><p>레퍼런스와 캐릭터 설정을 파악합니다.</p></div>
-      <div class="p-step"><span class="p-frame">f002</span><div class="p-diamond"></div><h4>리그 세팅</h4><p>본 구조와 계층을 설계합니다.</p></div>
-      <div class="p-step"><span class="p-frame">f003</span><div class="p-diamond"></div><h4>웨이트 페인팅</h4><p>메시와 뼈의 영향력을 다듬습니다.</p></div>
-      <div class="p-step"><span class="p-frame">f004</span><div class="p-diamond"></div><h4>애니메이션</h4><p>키프레임을 잡고 타이밍을 조율합니다.</p></div>
-      <div class="p-step"><span class="p-frame">f005</span><div class="p-diamond"></div><h4>익스포트/최적화</h4><p>엔진에 맞춰 최종 내보내기를 합니다.</p></div>
+      <div class="p-step"><div class="p-diamond"></div><h4>컨셉 분석</h4><p>레퍼런스와 캐릭터 설정을 파악합니다.</p></div>
+      <div class="p-step"><div class="p-diamond"></div><h4>리그 세팅</h4><p>본 구조와 계층을 설계합니다.</p></div>
+      <div class="p-step"><div class="p-diamond"></div><h4>웨이트 페인팅</h4><p>메시와 뼈의 영향력을 다듬습니다.</p></div>
+      <div class="p-step"><div class="p-diamond"></div><h4>애니메이션</h4><p>키프레임을 잡고 타이밍을 조율합니다.</p></div>
+      <div class="p-step"><div class="p-diamond"></div><h4>익스포트/최적화</h4><p>엔진에 맞춰 최종 내보내기를 합니다.</p></div>
     </div>
   </div>
 </section>
@@ -418,26 +429,6 @@
           <span class="link-card-arrow">↗</span>
         </a>
 
-        <!-- CUSTOMIZE: 새 링크 카드를 추가하려면 위 <a> 블록을 통째로 복사해서 아래에 붙여넣고 값만 바꾸세요 -->
-        <a class="link-card" style="--card-accent: var(--ik)" href="https://example.com" target="_blank" rel="noopener">
-          <span class="link-card-icon">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M10 14a3.5 3.5 0 0 0 5 0l3-3a3.5 3.5 0 0 0-5-5l-1.5 1.5"/><path d="M14 10a3.5 3.5 0 0 0-5 0l-3 3a3.5 3.5 0 0 0 5 5l1.5-1.5"/></svg>
-          </span>
-          <span class="link-card-text">
-            <h4>다른 사이트</h4>
-            <p>여기에 짧은 설명을 적어주세요</p>
-          </span>
-          <span class="link-card-arrow">↗</span>
-        </a>
-      </div>
-    </div>
-    <div class="foot-bottom">
-      <span>© 2026 ROHA</span>
-      <span>BUILT WITH SPINE RUNTIME 4.1</span>
-    </div>
-  </div>
-</footer>
-
 <!-- ============================= WORK MODAL (큰 화면 상호작용 뷰) ============================= -->
 <div class="work-modal-overlay" id="work-modal-overlay">
   <div class="work-modal" role="dialog" aria-modal="true" aria-labelledby="work-modal-title">
@@ -445,8 +436,12 @@
       <div>
         <h3 class="work-modal-title" id="work-modal-title"></h3>
         <div class="work-modal-cat" id="work-modal-cat"></div>
+        <p class="work-modal-desc" id="work-modal-desc"></p>
       </div>
-      <button class="work-modal-close" id="work-modal-close" aria-label="닫기">✕</button>
+      <div class="work-modal-actions">
+        <a class="work-modal-download" id="work-modal-download" href="#" target="_blank" rel="noopener" hidden>⬇ 월페이퍼 다운로드</a>
+        <button class="work-modal-close" id="work-modal-close" aria-label="닫기">✕</button>
+      </div>
     </div>
     <div class="work-modal-stage">
       <div class="work-modal-player" id="work-modal-player"></div>
@@ -476,17 +471,37 @@
                                         원작 IP/원화 크레딧 표기를 권장합니다.
    생략하면 isDemo:true → "demo", isDemo:false → "EMPTY" 로 자동 처리됩니다.
 
+   description: "카드 제목/카테고리 아래에 표시되는 작업 설명입니다. (선택 사항)
+     줄바꿈은 \n 으로 넣으면 됩니다. 비워두거나 생략하면 아무것도 표시되지 않습니다.
+     큰 화면(모달)이 열리는 작업물은 모달 상단에도 같은 설명이 보입니다.
+
    크레딧 필드 (둘 다 선택 사항이며, 원하는 것만 넣으면 됩니다):
      illustrator: { name, url }  →  "일러스트 · 이름 ↗"  (원화/작화 작업자)
      original:    { name, url }  →  "원작 · 이름 ↗"      (2차창작의 원작 IP/작품 표기용)
+                 원작이 여러 개면 배열로: original: [ { name, url }, { name, url } ]  → 한 줄씩 표시
    url은 생략 가능합니다. url 없이 name만 넣으면 링크 없는 텍스트로만 표시됩니다.
    2차창작(fanart)은 원화 작가와 원작(IP) 둘 다 표기하고 싶을 때 두 필드를
    함께 넣으면 두 줄로 각각 표시됩니다.
 ============================================================ */
+/* ------------------------------------------------------------
+   [웹 월페이퍼(월페이퍼 엔진용 HTML)를 그대로 보여주는 카드용 필드]
+     embedUrl:    월페이퍼 폴더의 embed.html 경로. 지정하면 jsonUrl/atlasUrl 대신
+                  이 페이지를 iframe으로 띄웁니다. (배경 영상, 외곽선, 그림자,
+                  하트/별 이펙트, 쓰다듬기·때리기·볼 당기기가 월페이퍼 엔진과 똑같이 동작)
+     embedHint:   모달 왼쪽 아래에 잠깐 보이는 조작 안내 문구
+     downloadUrl: 모달 상단 "월페이퍼 다운로드" 버튼 링크
+                  (파일 경로면 바로 다운로드, http(s) 링크면 새 탭으로 열림)
+     downloadLabel: 버튼 글자 바꾸기 (기본 "⬇ 월페이퍼 다운로드")
+     downloadAvailableAt: 이 시각 전에는 버튼이 잠겨 있다가, 시각이 지나면 자동으로 링크가 열립니다.
+                  "2026-12-13T18:00:00+09:00" 처럼 시간대(+09:00 = 한국)까지 적어주세요. 생략하면 항상 열려 있습니다.
+     downloadLockedLabel: 잠겨 있는 동안 버튼에 보일 글자 (기본 "🔒 공개 예정")
+   ※ viewport는 이 카드에서는 "화면 비율(가로:세로)"만 정하는 데 쓰입니다.
+------------------------------------------------------------ */
 const PROJECTS = [
     {
     title: "라이브 월페이퍼",
     category: "2차창작 · 라이브 월페이퍼",
+    description: "원화, 파츠분리도 작업했습니다.\n1920×1080 화면에 맞춰 제작한 Spine 라이브 월페이퍼입니다.\n여러 캐릭터가 생동감 있게 움직이도록 애니메이션을 구성했습니다.",
     isDemo: true,
     badgeType: "fanart",
     jsonUrl: "assets/wallpaper-nfc/nfc_renamed.json",
@@ -496,12 +511,31 @@ const PROJECTS = [
     viewport: { x: -960, y: -540, width: 1920, height: 1080, debugRender: false },
     // CUSTOMIZE: 외주는 클라이언트 동의 없이 공개하면 안 되니, 계약서에
     // 포트폴리오 게재 조항이 있는지 꼭 확인하세요.
-    illustrator: { name: "로하(본인)" },
+    illustrator: { name: "로하" },
+    original: { name: "트릭컬 리바이브 (에피드 게임즈)", url: "https://trickcal.com/" },
+    controlBones: []
+  },
+    {
+    title: "반응형 월페이퍼",
+    category: "2차창작 · 반응형 월페이퍼",
+    description: "원화, 파츠분리도 작업했습니다.\n1920×1080 화면에 맞춰 제작한 Spine 라이브 월페이퍼입니다.\n반응형으로 제작되어 볼당기기, 쓰다듬기 등의 상호작용을 할 수 있습니다.\n사이트에서 다운로드 가능합니다.",
+    isDemo: true,
+    badgeType: "fanart",
+    // ★ 월페이퍼 엔진용 웹 월페이퍼를 그대로 임베드 (assets/nerjimaseyo-wp/ 폴더)
+    embedUrl: "assets/nerjimaseyo-wp/embed.html",
+    embedHint: "🖱️ 머리 위에서 마우스 흔들기 = 쓰다듬기 · 클릭 = 때리기 · 볼 잡아당기기 · 머리 잡고 드래그",
+    downloadUrl: "https://rororoha68.github.io/spikiderujibazeyo/",   // 배포 페이지. zip 파일 경로로 바꿔도 됩니다.
+    downloadAvailableAt: "2026-12-13T18:00:00+09:00",                  // 12월 13일 오후 6시(한국 시간)에 자동으로 열림
+    downloadLockedLabel: "🔒 12월 13일 오후 6시 공개",
+    viewport: { x: -960, y: -540, width: 1920, height: 1080 },        // 화면 비율 16:9
+    illustrator: { name: "로하" },
+    original: { name: "트릭컬 리바이브 (에피드 게임즈)", url: "https://trickcal.com/" },
     controlBones: []
   },
   {
     title: "Idle 애니메이션",
     category: "개인 작업물 · Idle 애니메이션",
+    description: "숨쉬기, 시선, 머리카락 흔들림 등 작은 움직임으로 생동감을 준 Idle 애니메이션입니다.",
     isDemo: true,
     badgeType: "personal",
     jsonUrl: "assets/bbanana/bbanana.json",
@@ -510,11 +544,12 @@ const PROJECTS = [
     illustrator: { name: "빠나나" },
     // CUSTOMIZE: isDemo를 true로 바꾸고 실제 파일을 연결한 뒤,
     // 마우스로 드래그하게 할 뼈 이름을 여기에 넣어주세요. (없으면 빈 배열)
-    controlBones: []
+    controlBones: ["cheek", "atama"]
   },
   {
     title: "움직이는 일러스트",
     category: "2차창작 · 일러스트 애니메이팅",
+    description: "원근감을 위주로 스플래쉬 아트 풍으로 연출해본 애니메이션입니다.",
     isDemo: true,
     badgeType: "fanart",
     jsonUrl: "assets/MZD/MZD.json",
@@ -522,11 +557,13 @@ const PROJECTS = [
     // CUSTOMIZE: 외주는 클라이언트 동의 없이 공개하면 안 되니, 계약서에
     // 포트폴리오 게재 조항이 있는지 꼭 확인하세요.
     illustrator: { name: "산갈치" },
+    original: { name: "pop'n music", url: "https://www.konami.com/amusement/video/popn/" },
     controlBones: []
   },
   {
     title: "볼루록 갤러리",
     category: "2차창작 · 블루록 x 트릭컬 리바이브 스타일 인터랙션 데모 (여체화)",
+    description: "원화(트릭컬 리바이브 풍), 파츠분리도 작업했습니다.\n캐릭터를 직접 눌러보고 당겨볼 수 있는 인터랙션 데모 사이트입니다.\n카드를 누르면 실제 사이트로 이동해요.",
     // CUSTOMIZE: 썸네일에 실제 모션을 재생하고 싶으면 아래 jsonUrl/atlasUrl을
     // 채우고 isDemo를 true로 바꾸세요. (isDemo가 true여도 linkUrl이 있으면
     // 클릭 시 모달이 아니라 이 카드에 넣은 linkUrl로 이동합니다)
@@ -541,12 +578,16 @@ const PROJECTS = [
     // CUSTOMIZE: 2차창작은 원화/원작 크레딧을 꼭 남겨주세요.
     // CUSTOMIZE: 원작(원본 IP/작품) 표기. 예: 블루록 x 트릭컬 리바이브 2차창작이면
     // 각 원작 타이틀과 공식 링크를 넣어주세요.
-    original: { name: "블루 록 (카네시로 무네유키, 노무라 유스케), 트릭컬 리바이브 (에피드 게임즈)" },
+    original: [
+      { name: "블루 록 (카네시로 무네유키, 노무라 유스케)", url: "https://bluelock-kc.com/" },
+      { name: "트릭컬 리바이브 (에피드 게임즈)", url: "https://trickcal.com/" }
+    ],
     controlBones: []
   },
   {
     title: "키메라 리깅",
     category: "개인 작업물 · 크리쳐 리깅",
+    description: "여러 생물의 특징이 합쳐진 크리쳐를 리깅한 작업입니다.",
     isDemo: true,
     badgeType: "personal",
     jsonUrl: "assets/eva/kimera.json",
@@ -557,6 +598,11 @@ const PROJECTS = [
     controlBones: []
   }
 ];
+
+// 설명 텍스트에 < > & 같은 문자가 들어가도 깨지지 않게 이스케이프합니다.
+function escapeHtml(str) {
+  return String(str).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
 
 const grid = document.getElementById('works-grid');
 const liveRefs = []; // isDemo(라이브 에셋이 있는) 카드만 채워짐: { stage }
@@ -591,16 +637,30 @@ PROJECTS.forEach((proj, i) => {
     //   그대로 클릭하면 새 탭으로 이동합니다.
     stage.classList.add('is-live');
 
-    const playerDiv = document.createElement('div');
-    playerDiv.className = 'spine-player-embed';
-    playerDiv.id = 'player-' + i;
-    stage.appendChild(playerDiv);
+    let idleTag = null;
+    let embedFrame = null;
+    if (proj.embedUrl) {
+      // 월페이퍼 엔진용 웹 월페이퍼를 그대로 썸네일로 재생 (화면에 가까워질 때 로딩)
+      embedFrame = document.createElement('iframe');
+      embedFrame.className = 'wp-embed';
+      embedFrame.loading = 'lazy';
+      embedFrame.src = proj.embedUrl;
+      embedFrame.title = proj.title;
+      embedFrame.setAttribute('tabindex', '-1');
+      embedFrame.setAttribute('aria-hidden', 'true');
+      stage.appendChild(embedFrame);
+    } else {
+      const playerDiv = document.createElement('div');
+      playerDiv.className = 'spine-player-embed';
+      playerDiv.id = 'player-' + i;
+      stage.appendChild(playerDiv);
 
-    // 지금 재생 중인 모션 이름을 보여주는 작은 태그
-    const idleTag = document.createElement('div');
-    idleTag.className = 'idle-tag';
-    idleTag.textContent = '▶ …';
-    stage.appendChild(idleTag);
+      // 지금 재생 중인 모션 이름을 보여주는 작은 태그
+      idleTag = document.createElement('div');
+      idleTag.className = 'idle-tag';
+      idleTag.textContent = '▶ …';
+      stage.appendChild(idleTag);
+    }
 
     if (proj.linkUrl) {
       // linkUrl이 있는 카드는 호버 없이도(모바일 등 터치 기기 포함) 항상 보이는
@@ -621,12 +681,12 @@ PROJECTS.forEach((proj, i) => {
       // 넘겨보며 재생할 수 있습니다.
       const hint = document.createElement('div');
       hint.className = 'stage-hint';
-      hint.textContent = '🔍 클릭하면 크게 보기 · 화살표로 모션 전환';
+      hint.textContent = proj.embedUrl ? '🔍 클릭하면 크게 보기 · 직접 만져보세요' : '🔍 클릭하면 크게 보기 · 화살표로 모션 전환';
       stage.appendChild(hint);
 
       stage.addEventListener('click', () => openWorkModal(i));
     }
-    liveRefs[i] = { stage, idleTag };
+    liveRefs[i] = { stage, idleTag, embedFrame };
   } else if (proj.linkUrl) {
     // 외부 사이트로 연결되는 카드인데 아직 썸네일용 Spine 파일(jsonUrl/atlasUrl)은
     // 없는 경우: 간단한 아이콘 placeholder로 보여주고 클릭하면 바로 이동합니다.
@@ -672,8 +732,9 @@ PROJECTS.forEach((proj, i) => {
     <div>
       <h3>${proj.title}</h3>
       <div class="cat">${proj.category}</div>
+      ${proj.description ? `<p class="desc">${escapeHtml(proj.description)}</p>` : ''}
       ${proj.illustrator ? `<span class="credit">일러스트 · ${proj.illustrator.url ? `<a href="${proj.illustrator.url}" target="_blank" rel="noopener">${proj.illustrator.name} ↗</a>` : proj.illustrator.name}</span>` : ''}
-      ${proj.original ? `<span class="credit origin">원작 · ${proj.original.url ? `<a href="${proj.original.url}" target="_blank" rel="noopener">${proj.original.name} ↗</a>` : proj.original.name}</span>` : ''}
+      ${[].concat(proj.original || []).map(o => `<span class="credit origin">원작 · ${o.url ? `<a href="${o.url}" target="_blank" rel="noopener">${o.name} ↗</a>` : o.name}</span>`).join('')}
     </div>
     <span class="work-badge" style="color:${badge.color}; border-color:${badge.color};">${badge.label}</span>
   `;
@@ -734,13 +795,13 @@ window.addEventListener('load', () => {
   if (!window.spine) {
     console.error('[Spine] spine-player.js 가 로드되지 않았습니다. CDN(unpkg.com) 접근이 막혔거나, 이 파일을 file://로 직접 열었을 가능성이 있습니다. 로컬 서버(예: VS Code Live Server, `npx serve`)로 열어보세요.');
     PROJECTS.forEach((proj, i) => {
-      if (proj.isDemo) liveRefs[i].idleTag.textContent = '⚠ 로딩 실패';
+      if (proj.isDemo && liveRefs[i].idleTag) liveRefs[i].idleTag.textContent = '⚠ 로딩 실패';
     });
     return;
   }
 
   PROJECTS.forEach(async (proj, i) => {
-    if (!proj.isDemo) return;
+    if (!proj.isDemo || proj.embedUrl) return;   // 임베드 카드는 iframe이 알아서 재생
     const startAnim = await pickStartAnimation(proj.jsonUrl);
     new spine.SpinePlayer('player-' + i, {
       skeleton: proj.jsonUrl,
@@ -775,6 +836,7 @@ const workModalOverlay = document.getElementById('work-modal-overlay');
 const workModalPlayerEl = document.getElementById('work-modal-player');
 const workModalTitle = document.getElementById('work-modal-title');
 const workModalCat = document.getElementById('work-modal-cat');
+const workModalDesc = document.getElementById('work-modal-desc');
 const workModalClose = document.getElementById('work-modal-close');
 const workModalIkHint = document.getElementById('work-modal-ik-hint');
 const workModalPrevBtn = document.getElementById('work-modal-prev');
@@ -783,10 +845,13 @@ const workModalAnimLabel = document.getElementById('work-modal-anim-label');
 let workModalPlayer = null;
 let workModalAnimNames = [];   // 현재 모달에서 전환 가능한 모션 이름들
 let workModalAnimIndex = -1;   // 현재 재생 중인 모션의 인덱스
+let workModalEmbed = null;     // 임베드 월페이퍼 모달: { frame, cardIndex }
+let workModalHintTimer = null;
+const workModalDownload = document.getElementById('work-modal-download');
 
 async function openWorkModal(i) {
   const proj = PROJECTS[i];
-  if (!proj.isDemo || proj.linkUrl || !window.spine) return;
+  if (!proj.isDemo || proj.linkUrl || (!proj.embedUrl && !window.spine)) return;
 
   // viewport가 있는 작업물은 모달 스테이지도 같은 비율로 고정합니다(없으면 원래 스타일 복원).
   const modalEl = document.querySelector('.work-modal');
@@ -809,8 +874,16 @@ async function openWorkModal(i) {
 
   workModalTitle.textContent = proj.title;
   workModalCat.textContent = proj.category;
+  workModalDesc.textContent = proj.description || '';
   workModalOverlay.classList.add('open');
   document.body.style.overflow = 'hidden';
+
+  // 다운로드 버튼 (공개 시각 전에는 잠금, 지나면 자동으로 열림)
+  setupDownloadButton(proj);
+
+  // 월페이퍼 엔진용 웹 월페이퍼: Spine Player 대신 iframe으로 그대로 띄웁니다.
+  workModalPlayerEl.style.display = proj.embedUrl ? 'none' : '';
+  if (proj.embedUrl) { openEmbedInModal(i, proj, modalStageEl); return; }
 
   // ★ 요청 반영: 데모 카드(포트폴리오 그리드의 작업물 카드)에서는 볼 당기기 같은
   //   드래그 상호작용 없이 모션만 재생되도록, 모달을 열 때 controlBones를 항상
@@ -852,6 +925,68 @@ async function openWorkModal(i) {
   });
 }
 
+let workModalDownloadTimer = null;
+function setupDownloadButton(proj) {
+  clearTimeout(workModalDownloadTimer);
+  const btn = workModalDownload;
+  if (!proj.downloadUrl) { btn.hidden = true; return; }
+
+  const openAt = proj.downloadAvailableAt ? new Date(proj.downloadAvailableAt).getTime() : 0;
+  const lock = () => {
+    btn.removeAttribute('href');
+    btn.removeAttribute('download');
+    btn.setAttribute('aria-disabled', 'true');
+    btn.classList.add('is-locked');
+    btn.textContent = proj.downloadLockedLabel || '🔒 공개 예정';
+  };
+  const unlock = () => {
+    btn.href = proj.downloadUrl;
+    btn.classList.remove('is-locked');
+    btn.removeAttribute('aria-disabled');
+    btn.textContent = proj.downloadLabel || '⬇ 월페이퍼 다운로드';
+    if (/^https?:\/\//i.test(proj.downloadUrl)) btn.removeAttribute('download');
+    else btn.setAttribute('download', '');
+  };
+
+  btn.hidden = false;
+  const remain = openAt - Date.now();
+  if (openAt && remain > 0) {
+    lock();
+    // 모달을 열어둔 채로 공개 시각이 지나도 자동으로 풀리게 합니다. (setTimeout 한계 약 24일 이내일 때만)
+    if (remain < 2147483647) workModalDownloadTimer = setTimeout(unlock, remain + 50);
+  } else {
+    unlock();
+  }
+}
+
+function openEmbedInModal(i, proj, modalStageEl) {
+  // 카드 쪽 iframe은 잠시 비워서 WebGL/영상 디코딩이 두 벌 돌지 않게 합니다.
+  const cardFrame = liveRefs[i] && liveRefs[i].embedFrame;
+  if (cardFrame) cardFrame.src = 'about:blank';
+
+  const f = document.createElement('iframe');
+  f.className = 'wp-embed';
+  f.src = proj.embedUrl;
+  f.title = proj.title;
+  modalStageEl.insertBefore(f, modalStageEl.firstChild);
+  workModalEmbed = { frame: f, cardIndex: i };
+
+  // 조작 안내: 잠깐 보였다가 사라집니다.
+  if (proj.embedHint) {
+    workModalIkHint.textContent = proj.embedHint;
+    workModalIkHint.style.display = '';
+    clearTimeout(workModalHintTimer);
+    workModalHintTimer = setTimeout(() => { workModalIkHint.style.display = 'none'; }, 9000);
+  } else {
+    updateIkHint([]);
+  }
+}
+
+// iframe 안에서 ESC를 눌렀을 때(embed.html이 알려줌) 모달 닫기
+window.addEventListener('message', (e) => {
+  if (e.data && e.data.type === 'wp-close' && workModalEmbed && e.source === workModalEmbed.frame.contentWindow) closeWorkModal();
+});
+
 // CUSTOMIZE(요청 반영): SpinePlayer는 showControls:true일 때, 컨트롤 뼈를
 // 드래그하는 게 아니라 스테이지를 그냥 톡 클릭/탭만 해도 자동으로 재생/일시정지를
 // 토글하는 기본 동작이 있습니다. 이 "클릭하면 멈추는" 동작만 없애고, 컨트롤 바의
@@ -888,6 +1023,19 @@ function closeWorkModal() {
     workModalPlayer = null;
   }
   workModalPlayerEl.innerHTML = '';
+  workModalPlayerEl.style.display = '';
+  workModalDownload.hidden = true;
+  clearTimeout(workModalDownloadTimer);
+  clearTimeout(workModalHintTimer);
+  if (workModalEmbed) {
+    const { frame, cardIndex } = workModalEmbed;
+    frame.src = 'about:blank';
+    frame.remove();
+    workModalEmbed = null;
+    // 비워뒀던 카드 썸네일 다시 재생
+    const cf = liveRefs[cardIndex] && liveRefs[cardIndex].embedFrame;
+    if (cf) cf.src = PROJECTS[cardIndex].embedUrl;
+  }
   updateIkHint([]);
   workModalAnimNames = [];
   workModalAnimIndex = -1;
