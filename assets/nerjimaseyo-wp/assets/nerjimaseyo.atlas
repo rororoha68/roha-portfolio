@@ -1,0 +1,185 @@
+nerjimaseyo.png
+size:2014,1016
+filter:Linear,Linear
+pma:true
+A eye L
+bounds:1650,795,79,29
+rotate:90
+A eye R
+bounds:1975,889,94,33
+rotate:90
+A eyebrow L
+bounds:2,2,33,15
+A eyebrow R
+bounds:583,8,33,17
+B eye L
+bounds:1617,480,94,51
+rotate:90
+B eye R
+bounds:1256,448,115,60
+rotate:90
+B eyebrow L
+bounds:448,5,29,20
+B eyebrow R
+bounds:547,8,34,17
+C eye L
+bounds:1815,411,83,59
+offsets:2,1,85,60
+rotate:90
+C eye R
+bounds:1681,805,87,68
+offsets:0,6,103,75
+C eyebrow L
+bounds:357,2,31,23
+offsets:11,0,42,27
+C eyebrow R
+bounds:1975,985,37,29
+offsets:6,0,62,37
+N eye L
+bounds:934,440,101,94
+offsets:27,11,319,125
+rotate:90
+N eye R
+bounds:1030,443,112,98
+offsets:7,2,138,103
+N eyebrow L
+bounds:317,2,38,23
+offsets:5,0,43,30
+N eyebrow R
+bounds:390,2,31,23
+offsets:3,1,34,25
+N eyelashe L
+bounds:750,379,44,36
+offsets:5,5,73,50
+rotate:90
+N eyelashe R
+bounds:693,377,55,46
+offsets:0,4,64,50
+N tear L
+bounds:1637,958,50,56
+offsets:0,4,56,65
+N tear R
+bounds:1689,74,67,60
+offsets:0,1,75,66
+N tearshadow L
+bounds:1937,381,51,60
+offsets:4,2,319,125
+N tearshadow R
+bounds:1937,443,64,51
+offsets:2,0,66,51
+ahoge B
+bounds:423,2,23,23
+offsets:0,0,23,24
+ahoge F
+bounds:1770,40,90,151
+offsets:0,0,90,153
+arm LD
+bounds:1136,4,98,111
+rotate:90
+arm LU
+bounds:1670,365,143,237
+offsets:0,31,143,269
+arm RD
+bounds:1540,15,105,147
+offsets:0,13,109,160
+rotate:90
+arm RU
+bounds:1486,782,149,232
+offsets:3,4,160,244
+backhair L
+bounds:599,425,150,589
+offsets:9,0,159,589
+backhair M
+bounds:2,374,595,640
+offsets:47,0,742,640
+backhair R
+bounds:751,440,181,574
+offsets:0,0,208,574
+backhair S
+bounds:1820,496,135,172
+offsets:18,0,153,172
+rotate:90
+backhair S1
+bounds:1689,875,139,284
+offsets:3,18,162,309
+rotate:90
+body
+bounds:1136,104,337,238
+offsets:22,99,468,338
+rotate:90
+face
+bounds:791,2,436,343
+offsets:33,35,486,393
+rotate:90
+fronthair L
+bounds:1820,697,186,176
+offsets:0,12,186,188
+fronthair M
+bounds:1486,576,162,204
+offsets:0,14,162,218
+fronthair R
+bounds:1770,193,170,224
+offsets:0,14,173,243
+rotate:90
+hand L
+bounds:1637,876,80,41
+rotate:90
+hand R
+bounds:599,374,92,49
+leg
+bounds:2,19,353,313
+offsets:36,0,389,346
+rotate:90
+mouth
+bounds:1318,450,108,114
+offsets:67,0,222,215
+mouth 2
+bounds:479,8,66,17
+mouth 4
+bounds:1689,8,56,64
+mouth 복사
+bounds:1428,453,90,111
+mouth3
+bounds:1433,11,109,105
+rotate:90
+ribbon
+bounds:1520,450,124,95
+offsets:2,8,147,105
+rotate:90
+sidehair L
+bounds:934,543,205,471
+offsets:17,4,222,475
+sidehair LS1
+bounds:1637,136,131,227
+offsets:10,3,148,230
+sidehair LS2
+bounds:1249,5,182,97
+sidehair R
+bounds:1141,565,154,449
+offsets:358,15,516,472
+sidehair RS
+bounds:1820,633,62,173
+offsets:0,0,64,173
+rotate:90
+skirt
+bounds:1376,122,326,259
+offsets:18,39,350,327
+rotate:90
+skull
+bounds:1650,604,189,168
+offsets:0,10,190,178
+rotate:90
+vail L
+bounds:1144,448,110,115
+offsets:17,22,127,137
+vail LB
+bounds:1876,414,59,80
+offsets:0,0,63,109
+vail M
+bounds:1297,566,448,187
+offsets:16,0,464,187
+rotate:90
+vail R
+bounds:317,27,345,472
+offsets:0,13,345,485
+rotate:90

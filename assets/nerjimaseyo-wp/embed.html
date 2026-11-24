@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+<style>
+  html, body { margin:0; height:100%; overflow:hidden; background:#1a1a22; touch-action:none; }
+  canvas { width:100%; height:100%; display:block; }
+</style>
+<!-- 웹사이트 임베드용 진입점. Wallpaper Engine용 index.html 과 같은 main.js 를 그대로 씁니다.
+     ① __weActive = true : 브라우저 테스트용 디버그 패널/판정 표시를 숨깁니다.
+     ② 아래 WE_PROPS : Wallpaper Engine project.json 에 저장된 값(위치/크기/외곽선/그림자 등)을
+        그대로 적용합니다. 숫자를 바꾸면 웹 임베드에도 바로 반영돼요. -->
+<script>window.__weActive = true;</script>
+</head>
+<body>
+<canvas id="c"></canvas>
+<script src="lib/spine-webgl.js"></script>
+<script src="main.js"></script>
+<script>
+const WE_PROPS = {
+  "show_bg": true,
+  "show_nerjimaseyo": true,
+  "show_frame": true,
+  "scale": 1.5,
+  "bg_alpha": 1,
+  "frame_alpha": 1,
+  "bg_video": "assets/bg.webm",
+  "layer_bg": 0,
+  "layer_nerjimaseyo": 1,
+  "layer_frame": 2,
+  "nerjimaseyo_x": 440,
+  "nerjimaseyo_y": -145,
+  "nerjimaseyo_s": 2,
+  "outline_on": true,
+  "outline_width": 10,
+  "outline_color": "1.000 1.000 1.000",
+  "shadow_on": true,
+  "shadow_alpha": 0.75,
+  "shadow_blur": 12,
+  "shadow_x": 40,
+  "shadow_y": -25,
+  "shadow_color": "0.384 0.314 0.302",
+  "effect_heart_on": true,
+  "effect_star_on": true
+};
+
+// Wallpaper Engine 이 하는 것과 똑같이 속성값을 전달
+(function () {
+  const p = {};
+  for (const k of Object.keys(WE_PROPS)) p[k] = { value: WE_PROPS[k] };
+  window.wallpaperPropertyListener.applyUserProperties(p);
+})();
+
+// 마우스를 iframe 밖에서 떼거나 벗어났을 때 눌림 상태가 남지 않게 정리
+document.addEventListener('mouseleave', () => { try { releaseAll(); } catch (e) {} });
+window.addEventListener('blur', () => { try { releaseAll(); } catch (e) {} });
+
+// 터치 → 마우스 이벤트 변환 (main.js 는 마우스 이벤트만 사용하므로, 모바일에서도 누르기/당기기/드래그가 되게 함)
+(function () {
+  let active = false;
+  const mk = (type, t, buttons) => new MouseEvent(type, {
+    bubbles: true, cancelable: true, view: window, button: 0, buttons,
+    clientX: t.clientX, clientY: t.clientY, screenX: t.screenX, screenY: t.screenY
+  });
+  window.addEventListener('touchstart', (e) => {
+    const t = e.touches[0]; if (!t) return;
+    active = true;
+    window.dispatchEvent(mk('mousemove', t, 0));
+    window.dispatchEvent(mk('mousedown', t, 1));
+    e.preventDefault();
+  }, { passive: false });
+  window.addEventListener('touchmove', (e) => {
+    if (!active) return;
+    const t = e.touches[0]; if (!t) return;
+    window.dispatchEvent(mk('mousemove', t, 1));
+    e.preventDefault();
+  }, { passive: false });
+  const end = (e) => {
+    if (!active) return;
+    active = false;
+    const t = e.changedTouches[0]; if (!t) return;
+    window.dispatchEvent(mk('mouseup', t, 0));
+    e.preventDefault();
+  };
+  window.addEventListener('touchend', end, { passive: false });
+  window.addEventListener('touchcancel', end, { passive: false });
+})();
+
+// 모달 안에서 ESC 를 눌러도 닫히도록 부모 페이지에 알려줌
+window.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape' && window.parent !== window) window.parent.postMessage({ type: 'wp-close' }, '*');
+});
+</script>
+</body>
+</html>
