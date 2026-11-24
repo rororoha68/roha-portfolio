@@ -210,6 +210,11 @@
   .work-meta .credit{ font-family: var(--mono); font-size: 11px; color: var(--ink-dim); margin-top: 8px; display: block; }
   .work-meta .credit a{ color: var(--ink-dim); text-decoration: none; border-bottom: 1px dotted var(--line); transition: color .2s, border-color .2s; }
   .work-meta .credit a:hover{ color: var(--bone); border-color: var(--bone); }
+  /* 일러스트 크레딧: 설명문과 구분선으로 분리, 라벨은 흐리게 / 이름은 본문색으로 밝게 */
+  .work-meta .credit.illust{ font-size: 12.5px; margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--line); }
+  .work-meta .credit.illust .credit-name{ color: var(--ink); }
+  .work-meta .credit.illust a{ color: var(--ink); border-bottom: 0; }
+  .work-meta .credit.illust a:hover{ color: var(--bone); }
   .work-meta .credit.origin{ color: var(--fan); }
   .work-meta .credit.origin a{ color: var(--fan); border-color: rgba(255,155,106,0.4); }
   .work-meta .credit.origin a:hover{ color: var(--bone); border-color: var(--bone); }
@@ -489,6 +494,7 @@
                   이 페이지를 iframe으로 띄웁니다. (배경 영상, 외곽선, 그림자,
                   하트/별 이펙트, 쓰다듬기·때리기·볼 당기기가 월페이퍼 엔진과 똑같이 동작)
      embedHint:   모달 왼쪽 아래에 잠깐 보이는 조작 안내 문구
+     linkTag:     카드 오른쪽 위에 "🔗 사이트로 이동" 같은 딱지만 붙입니다. (표시만 하고 클릭 동작은 그대로)
      downloadUrl: 모달 상단 "월페이퍼 다운로드" 버튼 링크
                   (파일 경로면 바로 다운로드, http(s) 링크면 새 탭으로 열림)
      downloadLabel: 버튼 글자 바꾸기 (기본 "⬇ 월페이퍼 다운로드")
@@ -511,7 +517,7 @@ const PROJECTS = [
     viewport: { x: -960, y: -540, width: 1920, height: 1080, debugRender: false },
     // CUSTOMIZE: 외주는 클라이언트 동의 없이 공개하면 안 되니, 계약서에
     // 포트폴리오 게재 조항이 있는지 꼭 확인하세요.
-    illustrator: { name: "로하" },
+    illustrator: { name: "로하(본인)" },
     original: { name: "트릭컬 리바이브 (에피드 게임즈)", url: "https://trickcal.com/" },
     controlBones: []
   },
@@ -523,12 +529,13 @@ const PROJECTS = [
     badgeType: "fanart",
     // ★ 월페이퍼 엔진용 웹 월페이퍼를 그대로 임베드 (assets/nerjimaseyo-wp/ 폴더)
     embedUrl: "assets/nerjimaseyo-wp/embed.html",
+    linkTag: "🔗 사이트로 이동",   // 카드 오른쪽 위 딱지(표시만, 클릭은 모달 열기 그대로)
     embedHint: "🖱️ 머리 위에서 마우스 흔들기 = 쓰다듬기 · 클릭 = 때리기 · 볼 잡아당기기 · 머리 잡고 드래그",
     downloadUrl: "https://rororoha68.github.io/spikiderujibazeyo/",   // 배포 페이지. zip 파일 경로로 바꿔도 됩니다.
     downloadAvailableAt: "2026-12-13T18:00:00+09:00",                  // 12월 13일 오후 6시(한국 시간)에 자동으로 열림
     downloadLockedLabel: "🔒 12월 13일 오후 6시 공개",
     viewport: { x: -960, y: -540, width: 1920, height: 1080 },        // 화면 비율 16:9
-    illustrator: { name: "로하" },
+    illustrator: { name: "로하(본인)" },
     original: { name: "트릭컬 리바이브 (에피드 게임즈)", url: "https://trickcal.com/" },
     controlBones: []
   },
@@ -563,7 +570,7 @@ const PROJECTS = [
   {
     title: "볼루록 갤러리",
     category: "2차창작 · 블루록 x 트릭컬 리바이브 스타일 인터랙션 데모 (여체화)",
-    description: "원화(트릭컬 리바이브 풍), 파츠분리도 작업했습니다.\n캐릭터를 직접 눌러보고 당겨볼 수 있는 인터랙션 데모 사이트입니다.\n카드를 누르면 실제 사이트로 이동해요.",
+    description: "원화(트릭컬 리바이브 풍), 파츠분리도 작업했습니다.\n캐릭터를 직접 눌러보고 당겨볼 수 있는 인터랙션 데모 사이트입니다.\n카드를 누르면 실제 사이트로 이동합니다.",
     // CUSTOMIZE: 썸네일에 실제 모션을 재생하고 싶으면 아래 jsonUrl/atlasUrl을
     // 채우고 isDemo를 true로 바꾸세요. (isDemo가 true여도 linkUrl이 있으면
     // 클릭 시 모달이 아니라 이 카드에 넣은 linkUrl로 이동합니다)
@@ -578,6 +585,7 @@ const PROJECTS = [
     // CUSTOMIZE: 2차창작은 원화/원작 크레딧을 꼭 남겨주세요.
     // CUSTOMIZE: 원작(원본 IP/작품) 표기. 예: 블루록 x 트릭컬 리바이브 2차창작이면
     // 각 원작 타이틀과 공식 링크를 넣어주세요.
+    illustrator: { name: "로하(본인)" },
     original: [
       { name: "블루 록 (카네시로 무네유키, 노무라 유스케)", url: "https://bluelock-kc.com/" },
       { name: "트릭컬 리바이브 (에피드 게임즈)", url: "https://trickcal.com/" }
@@ -662,6 +670,14 @@ PROJECTS.forEach((proj, i) => {
       stage.appendChild(idleTag);
     }
 
+    // 딱지만 붙이기: linkTag 글자가 있으면 오른쪽 위에 배지만 표시합니다. (클릭 동작은 바뀌지 않음)
+    if (proj.linkTag && !proj.linkUrl) {
+      const tagOnly = document.createElement('div');
+      tagOnly.className = 'link-tag';
+      tagOnly.textContent = proj.linkTag;
+      stage.appendChild(tagOnly);
+    }
+
     if (proj.linkUrl) {
       // linkUrl이 있는 카드는 호버 없이도(모바일 등 터치 기기 포함) 항상 보이는
       // "사이트로 이동" 배지를 오른쪽 위에 띄웁니다.
@@ -733,7 +749,7 @@ PROJECTS.forEach((proj, i) => {
       <h3>${proj.title}</h3>
       <div class="cat">${proj.category}</div>
       ${proj.description ? `<p class="desc">${escapeHtml(proj.description)}</p>` : ''}
-      ${proj.illustrator ? `<span class="credit">일러스트 · ${proj.illustrator.url ? `<a href="${proj.illustrator.url}" target="_blank" rel="noopener">${proj.illustrator.name} ↗</a>` : proj.illustrator.name}</span>` : ''}
+      ${proj.illustrator ? `<span class="credit illust">일러스트 · <span class="credit-name">${proj.illustrator.url ? `<a href="${proj.illustrator.url}" target="_blank" rel="noopener">${proj.illustrator.name} ↗</a>` : proj.illustrator.name}</span></span>` : ''}
       ${[].concat(proj.original || []).map(o => `<span class="credit origin">원작 · ${o.url ? `<a href="${o.url}" target="_blank" rel="noopener">${o.name} ↗</a>` : o.name}</span>`).join('')}
     </div>
     <span class="work-badge" style="color:${badge.color}; border-color:${badge.color};">${badge.label}</span>
