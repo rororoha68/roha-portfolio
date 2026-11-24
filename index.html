@@ -63,6 +63,11 @@
   }
 
   /* ---------- NAV ---------- */
+  /* PC 접속 권장 안내 (모바일/터치 기기에서만 표시, 닫기 가능) */
+  .pc-notice{ display: flex; align-items: center; justify-content: center; gap: 12px; padding: 10px 16px; background: var(--bone); color: #10130f; font-family: var(--mono); font-size: 12.5px; line-height: 1.5; text-align: center; }
+  .pc-notice[hidden]{ display: none; }
+  .pc-notice button{ flex: none; width: 28px; height: 28px; border: 0; border-radius: 50%; background: rgba(16,19,15,.12); color: #10130f; font-size: 16px; line-height: 1; cursor: pointer; }
+  .pc-notice button:hover{ background: rgba(16,19,15,.25); }
   header{ position: sticky; top: 0; z-index: 50; background: rgba(18,21,23,0.85); backdrop-filter: blur(10px); border-bottom: 1px solid var(--line); }
   .nav{ display: flex; align-items: center; justify-content: space-between; padding: 16px 28px; max-width: 1180px; margin: 0 auto; }
   .brand{ font-family: var(--mono); font-size: 13px; color: var(--ink-dim); display: flex; align-items: center; gap: 8px; letter-spacing: 0.02em; }
@@ -319,6 +324,11 @@
 </style>
 </head>
 <body class="grid-bg">
+
+<div class="pc-notice" id="pc-notice" role="note" hidden>
+  <span>💻 이 포트폴리오는 <b>PC 접속을 권장</b>합니다. 모바일에서는 일부 작업물이 느리게 동작할 수 있습니다.</span>
+  <button type="button" id="pc-notice-close" aria-label="안내 닫기">×</button>
+</div>
 
 <header>
   <nav class="nav">
@@ -2259,5 +2269,21 @@ const io = new IntersectionObserver((entries) => {
 document.querySelectorAll('.reveal').forEach((el) => io.observe(el));
 </script>
 
+<script>
+// PC 접속 권장 안내: 모바일(좁은 화면/터치 기기)에서만 보여주고, 닫으면 이번 방문 동안은 다시 안 띄웁니다.
+(function () {
+  var el = document.getElementById('pc-notice');
+  var closeBtn = document.getElementById('pc-notice-close');
+  if (!el || !closeBtn) return;
+  var closed = false;
+  try { closed = sessionStorage.getItem('pcNoticeClosed') === '1'; } catch (err) { /* noop */ }
+  var mobile = window.matchMedia && window.matchMedia('(max-width: 900px), (pointer: coarse)').matches;
+  if (mobile && !closed) el.hidden = false;
+  closeBtn.addEventListener('click', function () {
+    el.hidden = true;
+    try { sessionStorage.setItem('pcNoticeClosed', '1'); } catch (err) { /* noop */ }
+  });
+})();
+</script>
 </body>
 </html>
