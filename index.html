@@ -191,6 +191,14 @@
   .works-pager button:hover:not(:disabled){ border-color: var(--bone); color: var(--bone); }
   .works-pager button.on{ border-color: var(--bone); background: var(--bone); color: var(--bg); }
   .works-pager button:disabled{ opacity: .35; cursor: default; }
+  /* 필터 탭 (종류 / 연도). 작업물이 늘어나도 자동으로 만들어집니다. */
+  .works-filter{ display: flex; flex-direction: column; gap: 10px; margin-bottom: 26px; }
+  .works-filter[hidden]{ display: none; }
+  .works-filter .row{ display: flex; flex-wrap: wrap; gap: 8px; }
+  .works-filter button{ font-family: var(--mono); font-size: 12px; height: 34px; padding: 0 14px; border: 1px solid var(--line); border-radius: 999px; background: transparent; color: var(--ink-dim); cursor: pointer; transition: border-color .2s, color .2s, background .2s; }
+  .works-filter button:hover{ border-color: var(--bone); color: var(--bone); }
+  .works-filter button.on{ border-color: var(--bone); background: var(--bone); color: var(--bg); }
+  .works-empty{ grid-column: 1 / -1; text-align: center; color: var(--ink-dim); font-size: 14px; padding: 40px 0; }
   .work-card{ border: 1px solid var(--line); border-radius: var(--radius); background: var(--panel); overflow: hidden; transition: border-color .2s ease; }
   .work-card:hover{ border-color: var(--bone); }
   .work-stage{ aspect-ratio: 16 / 10.5; background: radial-gradient(var(--line) 1px, transparent 1px) 0 0/20px 20px, var(--bg); position: relative; display: flex; align-items: center; justify-content: center; }
@@ -415,6 +423,7 @@
       <h2 class="section-title">작업물</h2>
       <p class="section-sub">데모 카드를 클릭하면 크게 열리는 화면에서 <b>화살표(‹›)로 모션을 직접 넘겨볼 수 있어요</b>.</p>
     </div>
+    <nav class="works-filter" id="works-filter" aria-label="작업물 필터" hidden></nav>
     <div class="works-grid" id="works-grid"><!-- JS가 채웁니다 --></div>
     <nav class="works-pager" id="works-pager" aria-label="작업물 페이지" hidden></nav>
   </div>
@@ -488,6 +497,9 @@
      줄바꿈은 \n 으로 넣으면 됩니다. 비워두거나 생략하면 아무것도 표시되지 않습니다.
      큰 화면(모달)이 열리는 작업물은 모달 상단에도 같은 설명이 보입니다.
 
+   year: 2026   (선택) 작업 연도. 적으면 카드 카테고리 앞에 "2026 ·" 으로 표시되고,
+                 연도가 2개 이상이면 위쪽 필터에 연도 버튼이 자동으로 생깁니다.
+
    크레딧 필드 (둘 다 선택 사항이며, 원하는 것만 넣으면 됩니다):
      illustrator: { name, url }  →  "일러스트 · 이름 ↗"  (원화/작화 작업자)
      original:    { name, url }  →  "원작 · 이름 ↗"      (2차창작의 원작 IP/작품 표기용)
@@ -517,6 +529,7 @@ const PROJECTS = [
     category: "2차창작 · 라이브 월페이퍼",
     description: "원화, 파츠분리도 작업했습니다.\n1920×1080 화면에 맞춰 제작한 Spine 라이브 월페이퍼입니다.\n여러 캐릭터가 생동감 있게 움직이도록 애니메이션을 구성했습니다.",
     isDemo: true,
+    year: 2026,
     badgeType: "fanart",
     jsonUrl: "assets/wallpaper-nfc/nfc_renamed.json",
     atlasUrl: "assets/wallpaper-nfc/nfc_renamed.atlas",
@@ -534,6 +547,7 @@ const PROJECTS = [
     category: "2차창작 · 반응형 월페이퍼",
     description: "원화, 파츠분리도 작업했습니다.\n1920×1080 화면에 맞춰 제작한 Spine 라이브 월페이퍼입니다.\n반응형으로 제작되어 볼당기기, 쓰다듬기 등의 상호작용을 할 수 있습니다.\n사이트에서 다운로드 가능합니다.",
     isDemo: true,
+    year: 2026,
     badgeType: "fanart",
     // ★ 월페이퍼 엔진용 웹 월페이퍼를 그대로 임베드 (assets/nerjimaseyo-wp/ 폴더)
     embedUrl: "assets/nerjimaseyo-wp/embed.html",
@@ -548,34 +562,6 @@ const PROJECTS = [
     controlBones: []
   },
   {
-    title: "Idle 애니메이션",
-    category: "개인 작업물 · Idle 애니메이션",
-    description: "숨쉬기, 시선, 머리카락 흔들림 등 작은 움직임으로 생동감을 준 Idle 애니메이션입니다.",
-    isDemo: true,
-    badgeType: "personal",
-    jsonUrl: "assets/bbanana/bbanana.json",
-    atlasUrl: "assets/bbanana/bbanana.atlas",
-    // CUSTOMIZE: 원화 작가 크레딧. 필요 없으면 illustrator 자체를 지워도 됩니다.
-    illustrator: { name: "빠나나" },
-    // CUSTOMIZE: isDemo를 true로 바꾸고 실제 파일을 연결한 뒤,
-    // 마우스로 드래그하게 할 뼈 이름을 여기에 넣어주세요. (없으면 빈 배열)
-    controlBones: ["cheek", "atama"]
-  },
-  {
-    title: "움직이는 일러스트",
-    category: "2차창작 · 일러스트 애니메이팅",
-    description: "원근감을 위주로 스플래쉬 아트 풍으로 연출해본 애니메이션입니다.",
-    isDemo: true,
-    badgeType: "fanart",
-    jsonUrl: "assets/MZD/MZD.json",
-    atlasUrl: "assets/MZD/MZD.atlas",
-    // CUSTOMIZE: 외주는 클라이언트 동의 없이 공개하면 안 되니, 계약서에
-    // 포트폴리오 게재 조항이 있는지 꼭 확인하세요.
-    illustrator: { name: "산갈치" },
-    original: { name: "pop'n music", url: "https://www.konami.com/amusement/video/popn/" },
-    controlBones: []
-  },
-  {
     title: "볼루록 갤러리",
     category: "2차창작 · 블루록 x 트릭컬 리바이브 스타일 인터랙션 데모 (여체화)",
     description: "원화(트릭컬 리바이브 풍), 파츠분리도 작업했습니다.\n캐릭터를 직접 눌러보고 당겨볼 수 있는 인터랙션 데모 사이트입니다.\n카드를 누르면 실제 사이트로 이동합니다.",
@@ -583,6 +569,7 @@ const PROJECTS = [
     // 채우고 isDemo를 true로 바꾸세요. (isDemo가 true여도 linkUrl이 있으면
     // 클릭 시 모달이 아니라 이 카드에 넣은 linkUrl로 이동합니다)
     isDemo: true,
+    year: 2026,
     badgeType: "fanart",
     jsonUrl: "assets/cgr/CGR.json",
     atlasUrl: "assets/cgr/CGR.atlas",
@@ -604,12 +591,43 @@ const PROJECTS = [
     category: "개인 작업물 · 크리쳐 리깅",
     description: "여러 생물의 특징이 합쳐진 크리쳐를 리깅한 작업입니다.",
     isDemo: true,
+    year: 2026,
     badgeType: "personal",
     jsonUrl: "assets/eva/kimera.json",
     atlasUrl: "assets/eva/kimera.atlas",
     // CUSTOMIZE: 외주는 클라이언트 동의 없이 공개하면 안 되니, 계약서에
     // 포트폴리오 게재 조항이 있는지 꼭 확인하세요.
     illustrator: { name: "江波", url: "https://x.com/KomSuserTod" },
+    controlBones: []
+  }
+  {
+    title: "Idle 애니메이션",
+    category: "개인 작업물 · Idle 애니메이션",
+    description: "숨쉬기, 시선, 머리카락 흔들림 등 작은 움직임으로 생동감을 준 Idle 애니메이션입니다.",
+    isDemo: true,
+    year: 2026,
+    badgeType: "personal",
+    jsonUrl: "assets/bbanana/bbanana.json",
+    atlasUrl: "assets/bbanana/bbanana.atlas",
+    // CUSTOMIZE: 원화 작가 크레딧. 필요 없으면 illustrator 자체를 지워도 됩니다.
+    illustrator: { name: "빠나나" },
+    // CUSTOMIZE: isDemo를 true로 바꾸고 실제 파일을 연결한 뒤,
+    // 마우스로 드래그하게 할 뼈 이름을 여기에 넣어주세요. (없으면 빈 배열)
+    controlBones: ["cheek", "atama"]
+  },
+  {
+    title: "움직이는 일러스트",
+    category: "2차창작 · 일러스트 애니메이팅",
+    description: "원근감을 위주로 스플래쉬 아트 풍으로 연출해본 애니메이션입니다.",
+    isDemo: true,
+    year: 2026,
+    badgeType: "fanart",
+    jsonUrl: "assets/MZD/MZD.json",
+    atlasUrl: "assets/MZD/MZD.atlas",
+    // CUSTOMIZE: 외주는 클라이언트 동의 없이 공개하면 안 되니, 계약서에
+    // 포트폴리오 게재 조항이 있는지 꼭 확인하세요.
+    illustrator: { name: "산갈치" },
+    original: { name: "pop'n music", url: "https://www.konami.com/amusement/video/popn/" },
     controlBones: []
   }
 ];
@@ -638,10 +656,76 @@ function getBadge(proj) {
 // 한 페이지에 보여줄 작업물 수. 카드마다 Spine/WebGL(월페이퍼 카드는 영상 포함)이 동시에 돌아가서
 // 많으면 렉이 걸리므로, 이 개수를 넘으면 자동으로 다음 페이지로 나뉩니다.
 // (PROJECTS 순서대로 채워집니다. 페이지를 넘기면 이전 페이지의 플레이어는 모두 해제됩니다.)
-const WORKS_PER_PAGE = 4;
+const WORKS_PER_PAGE = 6;
 let worksPage = 0;
 let worksLoaded = false;        // window load 이후에만 Spine 플레이어를 만들 수 있음
 const cardPlayers = {};         // 프로젝트 index → 현재 살아있는 썸네일 SpinePlayer
+
+// ★ 요청 반영: 화면 밖으로 스크롤된 카드는 자동 일시정지, 다시 보이면 재생합니다.
+//   (크게보기 모달이 열려 있는 동안엔 보이는 카드도 전부 멈춰 있어야 하므로 cardsSuspended가 우선)
+let cardsSuspended = false;
+const cardOffscreen = new Set();   // 지금 화면 밖에 있는 카드의 프로젝트 index
+function applyCardState(i) {
+  const run = !cardsSuspended && !cardOffscreen.has(i);
+  const pl = cardPlayers[i];
+  if (pl) { try { if (run) pl.play(); else pl.pause(); } catch (err) { /* noop */ } }
+  const ref = liveRefs[i];
+  const f = ref && ref.embedFrame;
+  if (f && PROJECTS[i] && PROJECTS[i].embedUrl) {
+    if (run) { if (f.getAttribute('src') === 'about:blank') f.src = PROJECTS[i].embedUrl; }
+    else if (f.getAttribute('src') !== 'about:blank') f.src = 'about:blank';
+  }
+}
+const cardVisObserver = new IntersectionObserver((entries) => {
+  entries.forEach((e) => {
+    const i = Number(e.target.dataset.idx);
+    if (e.isIntersecting) cardOffscreen.delete(i); else cardOffscreen.add(i);
+    applyCardState(i);
+  });
+}, { rootMargin: '120px 0px' });
+
+// ★ 필터: 종류(badgeType) / 연도(year). 인덱스는 항상 PROJECTS 기준을 그대로 씁니다.
+const worksFilter = { type: 'all', year: 'all' };
+const worksFilterEl = document.getElementById('works-filter');
+function filteredIndices() {
+  const out = [];
+  PROJECTS.forEach((proj, i) => {
+    if (worksFilter.type !== 'all' && (proj.badgeType || (proj.isDemo ? 'demo' : 'empty')) !== worksFilter.type) return;
+    if (worksFilter.year !== 'all' && String(proj.year) !== worksFilter.year) return;
+    out.push(i);
+  });
+  return out;
+}
+function renderWorksFilter() {
+  const types = [];
+  PROJECTS.forEach((p) => { const k = p.badgeType || (p.isDemo ? 'demo' : 'empty'); if (!types.includes(k)) types.push(k); });
+  const years = [...new Set(PROJECTS.map((p) => p.year).filter(Boolean))].sort((a, b) => b - a);
+  // 고를 게 없으면(종류 1개, 연도 1개 이하) 필터 자체를 숨깁니다.
+  worksFilterEl.hidden = types.length < 2 && years.length < 2;
+  if (worksFilterEl.hidden) return;
+  worksFilterEl.innerHTML = '';
+  const addRow = (items, key) => {
+    if (items.length < 2) return;
+    const row = document.createElement('div');
+    row.className = 'row';
+    [['all', '전체']].concat(items).forEach(([val, label]) => {
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.textContent = label;
+      if (worksFilter[key] === String(val)) { b.classList.add('on'); b.setAttribute('aria-pressed', 'true'); } else b.setAttribute('aria-pressed', 'false');
+      b.addEventListener('click', () => {
+        worksFilter[key] = String(val);
+        renderWorksPage(0, false);
+        grid.querySelectorAll('.reveal').forEach((el) => el.classList.add('in'));   // 필터 전환 시 바로 보이게(스크롤 이동 없음)
+        renderWorksFilter();
+      });
+      row.appendChild(b);
+    });
+    worksFilterEl.appendChild(row);
+  };
+  addRow(types.map((k) => [k, (BADGE_TYPES[k] || BADGE_TYPES.empty).label]), 'type');
+  addRow(years.map((y) => [String(y), String(y)]), 'year');
+}
 
 function buildCard(proj, i) {
   const card = document.createElement('div');
@@ -718,6 +802,8 @@ function buildCard(proj, i) {
       stage.addEventListener('click', () => openWorkModal(i));
     }
     liveRefs[i] = { stage, idleTag, embedFrame };
+    stage.dataset.idx = i;
+    cardVisObserver.observe(stage);   // 화면 밖이면 자동 일시정지
   } else if (proj.linkUrl) {
     // 외부 사이트로 연결되는 카드인데 아직 썸네일용 Spine 파일(jsonUrl/atlasUrl)은
     // 없는 경우: 간단한 아이콘 placeholder로 보여주고 클릭하면 바로 이동합니다.
@@ -762,7 +848,7 @@ function buildCard(proj, i) {
   meta.innerHTML = `
     <div>
       <h3>${proj.title}</h3>
-      <div class="cat">${proj.category}</div>
+      <div class="cat">${proj.year ? proj.year + ' · ' : ''}${proj.category}</div>
       ${proj.description ? `<p class="desc">${escapeHtml(proj.description)}</p>` : ''}
       ${proj.illustrator ? `<span class="credit illust">일러스트 · <span class="credit-name">${proj.illustrator.url ? `<a href="${proj.illustrator.url}" target="_blank" rel="noopener">${proj.illustrator.name} ↗</a>` : proj.illustrator.name}</span></span>` : ''}
       ${[].concat(proj.original || []).map(o => `<span class="credit origin">원작 · ${o.url ? `<a href="${o.url}" target="_blank" rel="noopener">${o.name} ↗</a>` : o.name}</span>`).join('')}
@@ -777,7 +863,7 @@ function buildCard(proj, i) {
 
 // ---------- 페이지 렌더링 ----------
 const worksPager = document.getElementById('works-pager');
-const worksPageCount = () => Math.max(1, Math.ceil(PROJECTS.length / WORKS_PER_PAGE));
+const worksPageCount = () => Math.max(1, Math.ceil(filteredIndices().length / WORKS_PER_PAGE));
 
 function disposeCardPlayers() {
   Object.keys(cardPlayers).forEach((k) => {
@@ -789,11 +875,15 @@ function disposeCardPlayers() {
 function renderWorksPage(page, userInitiated) {
   worksPage = Math.min(Math.max(0, page), worksPageCount() - 1);
   disposeCardPlayers();          // 이전 페이지의 WebGL 컨텍스트 해제
+  cardVisObserver.disconnect();  // 이전 카드 관찰 해제
+  cardOffscreen.clear();
   grid.innerHTML = '';           // 월페이퍼 iframe도 함께 사라짐
   liveRefs.length = 0;
 
   const start = worksPage * WORKS_PER_PAGE;
-  PROJECTS.slice(start, start + WORKS_PER_PAGE).forEach((proj, k) => buildCard(proj, start + k));
+  const pageIdx = filteredIndices().slice(start, start + WORKS_PER_PAGE);
+  pageIdx.forEach((i) => buildCard(PROJECTS[i], i));
+  if (!pageIdx.length) grid.innerHTML = '<div class="works-empty">조건에 맞는 작업물이 없어요.</div>';
 
   // 페이지를 넘길 때는 스크롤 리빌을 기다리지 않고 바로 보이게
   if (userInitiated) grid.querySelectorAll('.reveal').forEach((el) => el.classList.add('in'));
@@ -824,6 +914,7 @@ function renderWorksPager() {
 }
 
 renderWorksPage(0, false);
+renderWorksFilter();
 
 // ---------- 자동재생 관련 헬퍼 ----------
 // 스켈레톤 JSON을 SpinePlayer 생성 "전에" 먼저 한 번 읽어서 애니메이션 이름을 알아냅니다.
@@ -897,6 +988,9 @@ async function initCardPlayer(proj, i) {
       // 있습니다.
       forcePlay(player, start);
       if (ref.idleTag) ref.idleTag.textContent = '▶ ' + start;
+      // 모달이 열려 있거나 화면 밖에서 늦게 로딩이 끝난 카드는 바로 일시정지
+      // (forcePlay가 다음 프레임에 play()를 한 번 더 부르므로 두 프레임 뒤에 상태를 적용합니다)
+      requestAnimationFrame(() => requestAnimationFrame(() => applyCardState(i)));
     },
     error: function (player, msg) {
       console.error('[Spine] "' + proj.title + '" 썸네일 로딩 실패:', msg);
@@ -907,7 +1001,7 @@ async function initCardPlayer(proj, i) {
 
 function initPageCardPlayers() {
   const start = worksPage * WORKS_PER_PAGE;
-  PROJECTS.slice(start, start + WORKS_PER_PAGE).forEach((proj, k) => initCardPlayer(proj, start + k));
+  filteredIndices().slice(start, start + WORKS_PER_PAGE).forEach((i) => initCardPlayer(PROJECTS[i], i));
 }
 
 window.addEventListener('load', () => {
@@ -941,6 +1035,23 @@ let workModalEmbed = null;     // 임베드 월페이퍼 모달: { frame, cardIn
 let workModalHintTimer = null;
 const workModalDownload = document.getElementById('work-modal-download');
 
+// ★ 요청 반영(렉 개선): 크게 보기(모달)가 열려 있는 동안에는 뒤에 가려진 카드들의
+//   Spine 모션/월페이퍼 iframe을 모두 일시정지하고, 모달을 닫으면 다시 재생합니다.
+//   - Spine 썸네일: player.pause() / player.play()
+//   - 월페이퍼 iframe: 내부를 멈출 방법이 없어서 src를 비웠다가(about:blank) 닫을 때 복구
+function suspendBackgroundCards() {
+  cardsSuspended = true;
+  // 상단 히어로 캐릭터도 함께 일시정지
+  try { if (typeof heroSpinePlayer !== 'undefined' && heroSpinePlayer && typeof heroSpinePlayer.pause === 'function') heroSpinePlayer.pause(); } catch (err) { /* noop */ }
+  liveRefs.forEach((ref, idx) => applyCardState(idx));
+}
+
+function resumeBackgroundCards() {
+  cardsSuspended = false;
+  try { if (typeof heroSpinePlayer !== 'undefined' && heroSpinePlayer && typeof heroSpinePlayer.play === 'function') heroSpinePlayer.play(); } catch (err) { /* noop */ }
+  liveRefs.forEach((ref, idx) => applyCardState(idx));   // 화면 밖 카드는 계속 멈춰 있음
+}
+
 async function openWorkModal(i) {
   const proj = PROJECTS[i];
   if (!proj.isDemo || proj.linkUrl || (!proj.embedUrl && !window.spine)) return;
@@ -969,6 +1080,7 @@ async function openWorkModal(i) {
   workModalDesc.textContent = proj.description || '';
   workModalOverlay.classList.add('open');
   document.body.style.overflow = 'hidden';
+  suspendBackgroundCards();   // 뒤에 가려진 카드들은 일시정지
 
   // 다운로드 버튼 (공개 시각 전에는 잠금, 지나면 자동으로 열림)
   setupDownloadButton(proj);
@@ -1124,10 +1236,8 @@ function closeWorkModal() {
     frame.src = 'about:blank';
     frame.remove();
     workModalEmbed = null;
-    // 비워뒀던 카드 썸네일 다시 재생
-    const cf = liveRefs[cardIndex] && liveRefs[cardIndex].embedFrame;
-    if (cf) cf.src = PROJECTS[cardIndex].embedUrl;
   }
+  resumeBackgroundCards();    // 일시정지했던 카드들 다시 재생(월페이퍼 iframe 포함)
   updateIkHint([]);
   workModalAnimNames = [];
   workModalAnimIndex = -1;
