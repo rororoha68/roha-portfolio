@@ -222,6 +222,10 @@
   .idle-tag{ position: absolute; left: 10px; top: 10px; font-family: var(--mono); font-size: 10.5px; background: rgba(0,0,0,0.55); color: var(--bone); padding: 4px 9px; border-radius: 999px; pointer-events: none; z-index: 5; }
   /* 호버 여부와 상관없이 항상 보이는 "사이트로 이동" 안내 배지 (터치 기기에서도 보이도록) */
   .link-tag{ position: absolute; right: 10px; top: 10px; font-family: var(--mono); font-size: 10.5px; background: rgba(0,0,0,0.55); color: var(--fan); border: 1px solid var(--fan); padding: 4px 9px; border-radius: 999px; pointer-events: none; z-index: 5; display: flex; align-items: center; gap: 5px; }
+  /* 크게보기에서 캐릭터와 상호작용(쓰다듬기/톡/볼 당기기)이 가능한 카드에 붙는 배지.
+     오른쪽 위 "사이트" 딱지가 같이 있으면 그 아래로 내려갑니다. */
+  .interact-tag{ position: absolute; right: 10px; top: 10px; font-family: var(--mono); font-size: 10.5px; background: rgba(0,0,0,0.55); color: var(--mesh); border: 1px solid var(--mesh); padding: 4px 9px; border-radius: 999px; pointer-events: none; z-index: 5; display: flex; align-items: center; gap: 5px; white-space: nowrap; }
+  .interact-tag.below{ top: 40px; }
   .work-placeholder{ display: flex; flex-direction: column; align-items: center; gap: 14px; color: var(--ink-dim); text-align: center; padding: 20px; cursor: default; }
   .work-placeholder svg{ width: 64px; height: 64px; opacity: 0.55; }
   .work-placeholder .hint{ font-family: var(--mono); font-size: 10.5px; color: var(--ink-dim); line-height: 1.6; word-break: break-all; padding: 0 12px;}
@@ -269,6 +273,8 @@
   .work-modal-close:hover{ border-color: var(--bone); color: var(--bone); }
   .work-modal-stage{ flex: 1; min-height: min(60vh, 560px); background: radial-gradient(var(--line) 1px, transparent 1px) 0 0/24px 24px, var(--bg); position: relative; border-radius: 0 0 var(--radius) var(--radius); }
   .work-modal-player{ width: 100%; height: 100%; }
+  /* 크게보기 상호작용 이펙트(하트/별) 레이어 — 모양은 .hero-heart / .hero-star 를 그대로 씁니다 */
+  .work-modal-effect-layer{ position: absolute; inset: 0; pointer-events: none; overflow: visible; z-index: 8; }
   .work-modal-actions{ display: flex; align-items: center; gap: 10px; flex: none; }
   .work-modal-download{ display: inline-flex; align-items: center; gap: 6px; font-family: var(--mono); font-size: 12px; color: var(--bone); text-decoration: none; border: 1px solid var(--bone); border-radius: 999px; padding: 7px 14px; white-space: nowrap; transition: background .2s, color .2s; }
   .work-modal-download:hover{ background: var(--bone); color: var(--bg); }
@@ -540,6 +546,11 @@
      siteUrl:     모달 상단에 "사이트로 이동" 버튼을 띄웁니다. (linkUrl과 달리 카드를 눌러도
                   이동하지 않고 포트폴리오 안의 모달이 열리며, 이동은 이 버튼을 눌렀을 때만 일어납니다)
      siteLabel:   siteUrl 버튼 글자 바꾸기
+     interaction: (이 필드가 있으면 카드에 "✋ 상호작용" 배지가 자동으로 붙습니다. embedUrl 카드도 마찬가지)
+                  크게보기에서 히어로 캐릭터와 같은 상호작용(톡 치기 / 쓰다듬기 / 볼 당기기)을 켭니다.
+                  { dragBone, hitBone, hitAnimation, angryAnimation, releaseAnimation,
+                    pullAnimation, petAnimation, petEndAnimation, hint } — 전부 선택 사항이고,
+                  뼈 이름이 없으면 해당 상호작용만 빠집니다. (아래 볼루록 갤러리 카드 참고)
      downloadUrl: 모달 상단 "월페이퍼 다운로드" 버튼 링크
                   (파일 경로면 바로 다운로드, http(s) 링크면 새 탭으로 열림)
      downloadLabel: 버튼 글자 바꾸기 (기본 "⬇ 월페이퍼 다운로드")
@@ -610,7 +621,21 @@ const PROJECTS = [
       { name: "블루 록 (카네시로 무네유키, 노무라 유스케)", url: "https://bluelock-kc.com/" },
       { name: "트릭컬 리바이브 (에피드 게임즈)", url: "https://trickcal.com/" }
     ],
-    controlBones: ["cheek", "atama"]
+    controlBones: ["cheek", "atama"],
+    // ★ 크게보기 상호작용(히어로 캐릭터와 동일):
+    //   atama(정수리) 톡 = hit → hit_end + 별 / atama 누른 채 움직이기 = pet_idle → pet_end + 하트
+    //   cheek(볼) 잡고 있는 동안 = pull_idle, 놓으면 pull_end + 스프링으로 제자리 복귀
+    interaction: {
+      dragBone: "cheek",
+      hitBone: "atama",
+      hitAnimation: "hit",
+      angryAnimation: "hit_end",
+      releaseAnimation: "pull_end",
+      pullAnimation: "pull_idle",
+      petAnimation: "pet_idle",
+      petEndAnimation: "pet_end",
+      hint: "🖱️ 머리(빨간 점)를 톡 치거나 쓰다듬고, 볼(빨간 점)을 잡아당겨 보세요"
+    }
   },
   {
     title: "키메라 리깅",
@@ -842,8 +867,17 @@ function buildCard(proj, i) {
     if ((proj.linkTag || proj.siteUrl) && !proj.linkUrl) {
       const tagOnly = document.createElement('div');
       tagOnly.className = 'link-tag';
-      tagOnly.textContent = proj.linkTag || '사이트';
+      tagOnly.textContent = '🔗 ' + (proj.linkTag || '사이트');
       stage.appendChild(tagOnly);
+    }
+
+    // 상호작용 배지: 크게보기에서 캐릭터를 만져볼 수 있는 카드에만 붙입니다.
+    //   (interaction 설정이 있는 Spine 카드, 또는 월페이퍼 임베드 카드)
+    if ((proj.interaction || proj.embedUrl) && !proj.linkUrl) {
+      const interactTag = document.createElement('div');
+      interactTag.className = 'interact-tag' + ((proj.linkTag || proj.siteUrl) ? ' below' : '');
+      interactTag.textContent = '✋ 상호작용';
+      stage.appendChild(interactTag);
     }
 
     if (proj.linkUrl) {
@@ -1157,7 +1191,7 @@ async function openWorkModal(i) {
   // 외부 사이트로 이어지는 보조 버튼 (siteUrl이 있는 카드만)
   if (proj.siteUrl) {
     workModalSiteLink.href = proj.siteUrl;
-    workModalSiteLink.textContent = proj.siteLabel || '사이트로 이동';
+    workModalSiteLink.textContent = '🔗 ' + (proj.siteLabel || '사이트로 이동');
     workModalSiteLink.hidden = false;
   } else {
     workModalSiteLink.hidden = true;
@@ -1168,11 +1202,16 @@ async function openWorkModal(i) {
   if (proj.videoUrl) { openVideoInModal(proj, modalStageEl); return; }
   if (proj.embedUrl) { openEmbedInModal(i, proj, modalStageEl); return; }
 
-  // ★ 요청 반영: 데모 카드(포트폴리오 그리드의 작업물 카드)에서는 볼 당기기 같은
-  //   드래그 상호작용 없이 모션만 재생되도록, 모달을 열 때 controlBones를 항상
-  //   빈 배열로 둡니다. (PROJECTS 배열에 controlBones를 적어놨더라도 여기서는
-  //   무시합니다 — 히어로 캐릭터의 드래그 상호작용은 상단 원 영역에만 남겨둡니다.)
-  const bones = [];
+  // ★ 요청 반영: 모달에서도 상호작용이 되도록, PROJECTS의 controlBones에 적어둔 뼈마다
+  //   마우스/터치로 잡아당길 수 있는 빨간 IK 핸들이 생깁니다. (없으면 빈 배열 = 상호작용 없음)
+  //   작은 카드 썸네일은 그대로 모션만 재생합니다. 히어로 캐릭터의 드래그 상호작용도 따로 유지됩니다.
+  // ★ 요청 반영: interaction이 없는 카드는 크게보기에서 상호작용이 아예 불가능합니다.
+  //   (controlBones가 적혀 있어도 빨간 IK 핸들을 만들지 않습니다 — 모션 전환/재생 컨트롤만 남음)
+  const inter = proj.interaction || null;
+  const bones = inter
+    ? Array.from(new Set([inter.dragBone, inter.hitBone].filter(Boolean)))
+    : [];
+  if (workModalInteraction) { workModalInteraction.dispose(); workModalInteraction = null; }
   updateIkHint(bones);
 
   const startAnim = await pickStartAnimation(proj.jsonUrl);
@@ -1201,6 +1240,11 @@ async function openWorkModal(i) {
       workModalAnimIndex = Math.max(0, anims.indexOf(start));
       updateAnimNav();
       suppressStageClickPause(player);
+      // 히어로 캐릭터와 같은 상호작용(톡/쓰다듬기/볼 당기기)
+      if (inter) {
+        workModalInteraction = createModalInteraction(player, inter, modalStageEl, () => workModalAnimNames[workModalAnimIndex] || start);
+        if (workModalInteraction && inter.hint && workModalIkHint) { workModalIkHint.textContent = inter.hint; workModalIkHint.style.display = ''; }
+      }
     },
     error: function (player, msg) {
       console.error('[Spine] 모달 로딩 실패:', msg);
@@ -1288,36 +1332,413 @@ window.addEventListener('message', (e) => {
   if (e.data && e.data.type === 'wp-close' && workModalEmbed && e.source === workModalEmbed.frame.contentWindow) closeWorkModal();
 });
 
-// CUSTOMIZE(요청 반영): SpinePlayer는 showControls:true일 때, 컨트롤 뼈를
-// 드래그하는 게 아니라 스테이지를 그냥 톡 클릭/탭만 해도 자동으로 재생/일시정지를
-// 토글하는 기본 동작이 있습니다. 이 "클릭하면 멈추는" 동작만 없애고, 컨트롤 바의
-// 진짜 재생/일시정지 버튼과 IK 핸들 드래그는 그대로 두기 위해, 라이브러리가 방금
-// 클릭으로 일시정지시킨 걸 바로 되돌립니다(드래그였던 경우엔 손대지 않습니다).
+// CUSTOMIZE(요청 반영): SpinePlayer는 showControls:true일 때, 컨트롤 뼈를 잡은 게 아니라
+// 스테이지를 그냥 톡 클릭/탭만 해도 재생/일시정지를 토글하는 기본 동작이 있습니다.
+// 이 "화면을 클릭하면 멈추는" 동작을 없애고, 재생/일시정지는 컨트롤 바의 버튼으로만
+// 되게 합니다. (IK 핸들 드래그와 컨트롤 바 버튼은 그대로 동작합니다.)
+//
+// 방법: 라이브러리가 캔버스 클릭을 처리하는 그 순간에만, 이 플레이어의 play()/pause()
+// 호출을 무시합니다. (예전처럼 "멈춘 뒤에 되돌리는" 방식이 아니라 아예 멈추지 않으니
+// 깜빡임이나 버튼 아이콘 불일치가 생기지 않습니다.)
+let workModalGuardCleanup = null;
 function suppressStageClickPause(player) {
+  if (workModalGuardCleanup) { workModalGuardCleanup(); workModalGuardCleanup = null; }
   const canvas = player && player.canvas;
-  if (!canvas) return;
-  let downPoint = null;
-  const onDown = (e) => { downPoint = getEventPoint(e); };
-  const onUp = (e) => {
-    if (!downPoint) return;
-    const p = getEventPoint(e);
-    const moved = Math.hypot(p.x - downPoint.x, p.y - downPoint.y);
-    downPoint = null;
-    // 드래그(뼈를 끌어당김)였다면 건드리지 않고, 제자리 클릭/탭이라 라이브러리가
-    // 방금 일시정지시킨 경우에만 되돌립니다.
-    if (moved < HERO_TAP_MOVE_THRESHOLD && player.paused) {
-      try { player.play(); } catch (err) { /* noop */ }
+  if (!canvas || typeof player.pause !== 'function' || typeof player.play !== 'function') return;
+
+  const origPause = player.pause.bind(player);
+  const origPlay = player.play.bind(player);
+  let downOnCanvas = false;   // 캔버스에서 누르기 시작했는지
+  let guard = false;          // 지금 처리 중인 게 "캔버스 클릭"인지
+
+  player.pause = function () { if (guard) return; return origPause(); };
+  player.play = function () { if (guard) return; return origPlay(); };
+
+  const onDown = () => { downOnCanvas = true; };
+  // window 캡처 단계에서 먼저 실행되므로, 라이브러리의 up 처리보다 앞서 guard가 켜집니다.
+  const onUpCapture = () => {
+    if (!downOnCanvas) return;
+    downOnCanvas = false;
+    guard = true;
+    setTimeout(() => { guard = false; }, 0);
+  };
+  const onCancel = () => { downOnCanvas = false; };
+
+  canvas.addEventListener('mousedown', onDown, true);
+  canvas.addEventListener('touchstart', onDown, { capture: true, passive: true });
+  window.addEventListener('mouseup', onUpCapture, true);
+  window.addEventListener('touchend', onUpCapture, { capture: true, passive: true });
+  window.addEventListener('touchcancel', onCancel, { capture: true, passive: true });
+
+  workModalGuardCleanup = () => {
+    canvas.removeEventListener('mousedown', onDown, true);
+    canvas.removeEventListener('touchstart', onDown, true);
+    window.removeEventListener('mouseup', onUpCapture, true);
+    window.removeEventListener('touchend', onUpCapture, true);
+    window.removeEventListener('touchcancel', onCancel, true);
+    player.pause = origPause;
+    player.play = origPlay;
+  };
+}
+
+
+// ============================================================
+// ★ 요청 반영: 크게보기(모달)에서도 상단 히어로 캐릭터와 "똑같은" 상호작용
+//   - 정수리(hitBone) 톡: hit → hit_end → 원래 모션 + 별 이펙트
+//   - 정수리를 누른 채 움직이기: pet_idle 반복 + 하트 → 놓으면 pet_end → 원래 모션
+//   - 볼(dragBone) 잡기: 잡고 있는 동안 pull_idle 반복 → 놓으면 pull_end + 스프링으로 제자리 복귀
+//   히어로 쪽 코드는 전역 상태를 쓰기 때문에 건드리지 않고, 같은 규칙을 "플레이어 한 개 단위"로
+//   독립시켜서 새로 만든 컨트롤러입니다. (뼈 좌표 헬퍼와 상수는 히어로와 공용으로 씁니다.)
+//   놓은 뒤 돌아가는 모션은 "지금 화살표로 고른 모션"입니다.
+// ============================================================
+let workModalInteraction = null;
+function createModalInteraction(player, cfg, layerParent, getIdleName) {
+  const canvas = player && player.canvas;
+  const skeleton = player && player.skeleton;
+  const state = player && player.animationState;
+  if (!canvas || !skeleton || !state || !cfg) return null;
+
+  const animNames = skeleton.data.animations.map((a) => a.name);
+  const has = (n) => !!n && animNames.includes(n);
+  const controlBones = Array.from(new Set([cfg.dragBone, cfg.hitBone].filter(Boolean)));
+  if (!controlBones.length) return null;
+  const idleName = () => (getIdleName && getIdleName()) || cfg.idleAnimation || animNames[0];
+
+  const layer = document.createElement('div');
+  layer.className = 'work-modal-effect-layer';
+  layerParent.appendChild(layer);
+
+  // 컨트롤 뼈의 "원래 자리"를 로딩 직후(셋업 포즈)에 한 번만 기록해둡니다.
+  const offsets = new Map();
+  controlBones.forEach((name) => {
+    const bone = skeleton.findBone(name);
+    if (!bone) return;
+    const pose = heroBonePose(bone);
+    offsets.set(name, { x: 0, y: 0, vx: 0, vy: 0, baseX: pose.x, baseY: pose.y, dragging: false, active: false });
+  });
+
+  let press = null;          // { x, y, boneName, petting }
+  let pullHold = false;
+  let petHold = false;
+  let lastHeartAt = 0;
+  let disposed = false;
+  let rafId = 0;
+
+  // ---------- 어떤 컨트롤 뼈를 눌렀는지 판정 ----------
+  const closestBone = (clientX, clientY) => {
+    try {
+      const renderer = player.sceneRenderer;
+      if (!renderer || !renderer.camera || typeof renderer.camera.worldToScreen !== 'function') return null;
+      const rect = canvas.getBoundingClientRect();
+      const px = clientX - rect.left;
+      const py = canvas.clientHeight - (clientY - rect.top);   // worldToScreen의 y는 위아래가 뒤집혀 있어요
+      let best = null, bestDist = HERO_HIT_TEST_RADIUS;
+      const p = new spine.Vector3(0, 0, 0);
+      controlBones.forEach((name) => {
+        try {
+          const w = heroBoneWorld(skeleton.findBone(name));
+          if (!w) return;
+          p.x = skeleton.x + w.x; p.y = skeleton.y + w.y; p.z = 0;
+          renderer.camera.worldToScreen(p, canvas.clientWidth, canvas.clientHeight);
+          const d = Math.hypot(p.x - px, p.y - py);
+          if (d < bestDist) { bestDist = d; best = name; }
+        } catch (err) { /* 뼈 하나가 실패해도 나머지는 계속 */ }
+      });
+      return best;
+    } catch (err) { return null; }
+  };
+  const legacySelected = () => {
+    try {
+      const sel = player.selectedBones;
+      if (!sel) return null;
+      for (let i = 0; i < controlBones.length; i++) if (sel[i]) return controlBones[i];
+    } catch (err) { /* noop */ }
+    return null;
+  };
+  const pressedBone = (x, y) => closestBone(x, y) || legacySelected();
+
+  // ---------- 모션 ----------
+  const startPull = () => {
+    if (!has(cfg.pullAnimation) || pullHold) return false;
+    try { state.setAnimation(0, cfg.pullAnimation, true); pullHold = true; } catch (err) { return false; }
+    return true;
+  };
+  const stopPull = () => {
+    if (!pullHold) return;
+    pullHold = false;
+    try {
+      if (has(cfg.releaseAnimation)) {
+        state.setAnimation(0, cfg.releaseAnimation, false);
+        state.addAnimation(0, idleName(), true, 0);
+      } else {
+        state.setAnimation(0, idleName(), true);
+      }
+    } catch (err) { /* noop */ }
+  };
+  const startPet = () => {
+    if (!has(cfg.petAnimation) || petHold) return;
+    try {
+      const entry = state.setAnimation(0, cfg.petAnimation, true);
+      if (entry) entry.mixDuration = 0.1;
+      petHold = true;
+    } catch (err) { /* noop */ }
+  };
+  const stopPet = () => {
+    if (!petHold) return;
+    petHold = false;
+    try {
+      if (has(cfg.petEndAnimation)) {
+        state.setAnimation(0, cfg.petEndAnimation, false);
+        state.addAnimation(0, idleName(), true, 0);
+      } else {
+        state.setAnimation(0, idleName(), true);
+      }
+    } catch (err) { /* noop */ }
+  };
+  const playHit = () => {
+    if (!has(cfg.hitAnimation)) return;
+    try {
+      state.setAnimation(0, cfg.hitAnimation, false);
+      if (has(cfg.angryAnimation)) state.addAnimation(0, cfg.angryAnimation, false, 0);
+      state.addAnimation(0, idleName(), true, 0);
+    } catch (err) { /* noop */ }
+  };
+
+  // ---------- 이펙트(하트/별) ----------
+  const anchor = (boneName) => {
+    if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return null;
+    const renderer = player.sceneRenderer;
+    const w = heroBoneWorld(skeleton.findBone(boneName));
+    if (!w || !renderer || !renderer.camera) return null;
+    const p = new spine.Vector3(skeleton.x + w.x, skeleton.y + w.y, 0);
+    renderer.camera.worldToScreen(p, canvas.clientWidth, canvas.clientHeight);
+    const cr = canvas.getBoundingClientRect();
+    const lr = layer.getBoundingClientRect();
+    return { x: p.x + (cr.left - lr.left), y: (canvas.clientHeight - p.y) + (cr.top - lr.top) };
+  };
+  const spawnHeart = (boneName) => {
+    const a = anchor(boneName);
+    if (!a || layer.childElementCount > 14) return;
+    const count = 1 + Math.floor(Math.random() * 2);
+    for (let i = 0; i < count; i++) {
+      const el = document.createElement('span');
+      el.className = 'hero-heart';
+      el.textContent = '♥';
+      el.style.left = (a.x + (Math.random() - 0.5) * 20) + 'px';
+      el.style.top = a.y + 'px';
+      el.style.setProperty('--dx', ((Math.random() - 0.5) * 40).toFixed(1) + 'px');
+      el.style.setProperty('--dy', (-(50 + Math.random() * 40)).toFixed(1) + 'px');
+      el.style.animationDelay = (Math.random() * 0.05).toFixed(2) + 's';
+      el.addEventListener('animationend', () => el.remove());
+      layer.appendChild(el);
     }
   };
-  canvas.addEventListener('mousedown', onDown);
-  canvas.addEventListener('touchstart', onDown, { passive: true });
-  window.addEventListener('mouseup', onUp);
-  window.addEventListener('touchend', onUp, { passive: true });
-  window.addEventListener('touchcancel', () => { downPoint = null; }, { passive: true });
+  const spawnStars = (boneName) => {
+    const a = anchor(boneName);
+    if (!a) return;
+    const count = HERO_STAR_COUNT_MIN + Math.floor(Math.random() * (HERO_STAR_COUNT_MAX - HERO_STAR_COUNT_MIN + 1));
+    for (let i = 0; i < count; i++) {
+      const angle = (-90 + (Math.random() - 0.5) * 150) * Math.PI / 180;
+      const dist = HERO_STAR_DIST_MIN + Math.random() * (HERO_STAR_DIST_MAX - HERO_STAR_DIST_MIN);
+      const el = document.createElement('span');
+      el.className = 'hero-star';
+      el.textContent = '★';
+      el.style.left = a.x + 'px';
+      el.style.top = a.y + 'px';
+      el.style.setProperty('--dx', (Math.cos(angle) * dist).toFixed(1) + 'px');
+      el.style.setProperty('--dy', (Math.sin(angle) * dist).toFixed(1) + 'px');
+      el.style.setProperty('--rot', (Math.random() * 180 - 90).toFixed(0) + 'deg');
+      el.style.animationDelay = (Math.random() * 0.05).toFixed(2) + 's';
+      el.addEventListener('animationend', () => el.remove());
+      layer.appendChild(el);
+    }
+  };
+
+  // ---------- 스프링 되돌림 ----------
+  // 놓는 순간 "원래 자리에서 벗어나 있는" 컨트롤 뼈는 전부 스프링으로 되돌립니다.
+  const releaseAll = () => {
+    controlBones.forEach((name) => {
+      const b = skeleton.findBone(name);
+      const o = offsets.get(name);
+      if (!b || !o) return;
+      const bp = heroBonePose(b);
+      const strayed = Math.abs(bp.x - o.baseX) > 0.01 || Math.abs(bp.y - o.baseY) > 0.01;
+      if (o.dragging || strayed) {
+        o.x = bp.x - o.baseX; o.y = bp.y - o.baseY;
+        o.vx = 0; o.vy = 0;
+        o.dragging = false; o.active = true;
+      }
+    });
+  };
+  const stepSprings = (dt) => {
+    offsets.forEach((off, name) => {
+      const bone = skeleton.findBone(name);
+      if (!bone || off.dragging || !off.active) return;   // 드래그 중엔 라이브러리가, 쉬는 중엔 애니메이션이 담당
+      const ax = -HERO_SPRING_STIFFNESS * off.x - HERO_SPRING_DAMPING * off.vx;
+      const ay = -HERO_SPRING_STIFFNESS * off.y - HERO_SPRING_DAMPING * off.vy;
+      off.vx += ax * dt; off.vy += ay * dt;
+      off.x += off.vx * dt; off.y += off.vy * dt;
+      const pose = heroBonePose(bone);
+      if (Math.abs(off.x) < 0.05 && Math.abs(off.y) < 0.05 && Math.abs(off.vx) < 0.05 && Math.abs(off.vy) < 0.05) {
+        off.x = 0; off.y = 0; off.vx = 0; off.vy = 0;
+        pose.x = off.baseX; pose.y = off.baseY;           // 마지막 한 번만 정확히 원위치로
+        off.active = false;
+        return;
+      }
+      pose.x = off.baseX + off.x;
+      pose.y = off.baseY + off.y;
+    });
+  };
+  let last = performance.now();
+  const loop = (now) => {
+    if (disposed) return;
+    rafId = requestAnimationFrame(loop);
+    const dt = Math.min((now - last) / 1000, 0.05);
+    last = now;
+    if (!player.paused) stepSprings(dt);
+  };
+  rafId = requestAnimationFrame(loop);
+
+  // ---------- 입력 ----------
+  const pointInCanvas = (x, y) => {
+    const r = canvas.getBoundingClientRect();
+    return x >= r.left && x <= r.right && y >= r.top && y <= r.bottom;
+  };
+  // 포인터가 캔버스 밖으로 나가면 "놓은 것"으로 처리하되, 라이브러리 자신의 드래그 상태도 끊어줍니다.
+  const forceReleaseLibraryDrag = (e) => {
+    try {
+      if (e.changedTouches && e.changedTouches.length) {
+        const t = e.changedTouches[0];
+        let touch = t;
+        try {
+          touch = new Touch({ identifier: t.identifier, target: canvas, clientX: t.clientX, clientY: t.clientY,
+            screenX: t.screenX, screenY: t.screenY, pageX: t.pageX, pageY: t.pageY });
+        } catch (ctorErr) { /* Touch 생성자가 없는 브라우저는 원본을 그대로 씀 */ }
+        const init = { bubbles: true, cancelable: true, touches: [], targetTouches: [], changedTouches: [touch] };
+        canvas.dispatchEvent(new TouchEvent('touchend', init));
+      } else {
+        const init = { bubbles: true, cancelable: true, clientX: e.clientX, clientY: e.clientY, button: 0, buttons: 0 };
+        canvas.dispatchEvent(new MouseEvent('mouseup', init));
+      }
+    } catch (err) { /* noop */ }
+  };
+
+  const onPressStart = (e) => {
+    if (player.paused) { press = null; return; }          // 일시정지 중엔 상호작용하지 않습니다.
+    const p = getEventPoint(e);
+    const boneName = pressedBone(p.x, p.y);
+    press = { x: p.x, y: p.y, boneName, petting: false };
+    if (!boneName) return;
+    const off = offsets.get(boneName);
+    if (off) off.dragging = true;                          // 드래그 중엔 스프링이 이 뼈를 건드리지 않게
+    if (boneName === cfg.dragBone) startPull();            // 볼을 잡고 있는 동안 pull 모션 반복
+  };
+
+  const onPressEnd = (e) => {
+    const st = press;
+    press = null;
+    if (!st || !st.boneName) {
+      // 뼈를 못 잡았어도 남아 있는 상태는 정리합니다.
+      if (pullHold) stopPull();
+      if (petHold) stopPet();
+      releaseAll();
+      return;
+    }
+    const { x, y, boneName } = st;
+    const p = getEventPoint(e);
+    const moved = Math.hypot(p.x - x, p.y - y);
+    const isDragBone = boneName === cfg.dragBone;
+    const isHitBone = boneName === cfg.hitBone;
+    const hadPull = pullHold;
+
+    if (isDragBone) stopPull();
+
+    if (st.petting) {                                      // 쓰다듬다가 놓음 → pet_end
+      stopPet();
+      releaseAll();
+      return;
+    }
+
+    if (moved < HERO_TAP_MOVE_THRESHOLD) {                 // 톡 클릭
+      const off = offsets.get(boneName);
+      if (off) {
+        off.dragging = false;
+        const tb = skeleton.findBone(boneName);
+        if (tb) { const tp = heroBonePose(tb); tp.x = off.baseX; tp.y = off.baseY; }   // hit 키프레임을 덮어쓰지 않게 바로 원위치
+        off.x = 0; off.y = 0; off.vx = 0; off.vy = 0; off.active = false;
+      }
+      if (isHitBone) { playHit(); spawnStars(boneName); }
+      releaseAll();
+      return;
+    }
+
+    // 끌었다 놓음 → 스프링 복귀 (pull 모션이 없는 리그면 release 모션만 직접 재생)
+    if (isDragBone && !hadPull && has(cfg.releaseAnimation)) {
+      try {
+        state.setAnimation(0, cfg.releaseAnimation, false);
+        state.addAnimation(0, idleName(), true, 0);
+      } catch (err) { /* noop */ }
+    }
+    releaseAll();
+  };
+
+  const onPressMove = (e) => {
+    if (!press) return;
+    const p = getEventPoint(e);
+    if (!pointInCanvas(p.x, p.y)) {                        // 캔버스 밖으로 나가면 놓은 것으로 처리
+      forceReleaseLibraryDrag(e);
+      onPressEnd(e);
+      return;
+    }
+    if (press.boneName && press.boneName === cfg.hitBone) {
+      if (!press.petting && Math.hypot(p.x - press.x, p.y - press.y) >= HERO_TAP_MOVE_THRESHOLD) {
+        press.petting = true;                              // 정수리를 누른 채 움직이면 쓰다듬기
+        startPet();
+        spawnHeart(press.boneName);
+        lastHeartAt = performance.now();
+      } else if (press.petting) {
+        const nowMs = performance.now();
+        if (nowMs - lastHeartAt > HERO_PET_HEART_INTERVAL_MS) { spawnHeart(press.boneName); lastHeartAt = nowMs; }
+      }
+    }
+  };
+  const onBlur = () => {
+    press = null;
+    if (pullHold) stopPull();
+    if (petHold) stopPet();
+    releaseAll();
+  };
+
+  canvas.addEventListener('mousedown', onPressStart);
+  canvas.addEventListener('touchstart', onPressStart, { passive: true });
+  window.addEventListener('mouseup', onPressEnd);
+  window.addEventListener('touchend', onPressEnd, { passive: true });
+  window.addEventListener('touchcancel', onPressEnd, { passive: true });
+  window.addEventListener('mousemove', onPressMove);
+  window.addEventListener('touchmove', onPressMove, { passive: true });
+  window.addEventListener('blur', onBlur);
+
+  return {
+    dispose() {
+      disposed = true;
+      cancelAnimationFrame(rafId);
+      canvas.removeEventListener('mousedown', onPressStart);
+      canvas.removeEventListener('touchstart', onPressStart);
+      window.removeEventListener('mouseup', onPressEnd);
+      window.removeEventListener('touchend', onPressEnd);
+      window.removeEventListener('touchcancel', onPressEnd);
+      window.removeEventListener('mousemove', onPressMove);
+      window.removeEventListener('touchmove', onPressMove);
+      window.removeEventListener('blur', onBlur);
+      layer.remove();
+    }
+  };
 }
 
 function closeWorkModal() {
   workModalOverlay.classList.remove('open');
+  if (workModalGuardCleanup) { workModalGuardCleanup(); workModalGuardCleanup = null; }
+  if (workModalInteraction) { workModalInteraction.dispose(); workModalInteraction = null; }
   document.body.style.overflow = '';
   if (workModalPlayer) {
     if (typeof workModalPlayer.dispose === 'function') workModalPlayer.dispose();
@@ -1360,8 +1781,8 @@ function updateIkHint(bones) {
 
 // ---------- 모션 전환: ‹›버튼 / 키보드 좌우 ----------
 // (요청 반영: 스테이지를 그냥 클릭했을 때 자동으로 멈추던 동작은
-// suppressStageClickPause()에서 취소하도록 바꿨습니다. 컨트롤 바의 재생/일시정지
-// 버튼과 IK 핸들 드래그는 그대로 정상 동작합니다.)
+// suppressStageClickPause()에서 막았습니다. 재생/일시정지는 컨트롤 바 버튼으로만 되고,
+// IK 핸들 드래그도 그대로 정상 동작합니다.)
 // 모션 전환은 버튼·키보드로만 처리합니다. (예전엔 옆으로 드래그하는
 // 스와이프로도 전환할 수 있게 했었는데, 볼 같은 컨트롤 뼈를 옆으로 당기는
 // 동작과 구분이 안 돼서 볼을 당겼다 놓을 때마다 모션이 바뀌는 문제가 있었어요.
